@@ -1,0 +1,12 @@
+[DB]
+db=gameslist
+host=
+user=gameslist_user
+pass=extremely_complex_password
+[Google]
+ClientId=a_number.apps.googleusercontent.com
+ClientSecret=extremely complex secret
+[Web]
+port=my port
+url=http://myurl.example.com
+environment=dev

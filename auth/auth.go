@@ -1,11 +1,12 @@
-package main
+package auth
 
 import (
 	"code.google.com/p/goauth2/oauth"
 	"database/sql"
-    _ "github.com/go-sql-driver/mysql"
 	"encoding/json"
 	"fmt"
+	u "github.com/ChrisKaufmann/goutils"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/msbranco/goconfig"
 	"io/ioutil"
 	"log"
@@ -24,17 +25,22 @@ const profileInfoURL = "https://www.googleapis.com/oauth2/v1/userinfo"
 const cachefile = "/dev/null"
 
 var (
-	MyURL             string
-	stmtGetUser       *sql.Stmt
-	stmtCookieIns     *sql.Stmt
-	stmtGetUserId     *sql.Stmt
-	stmtMarkedEntries *sql.Stmt
-	stmtGetUsername   *sql.Stmt
-	stmtInsertUser    *sql.Stmt
+	MyURL       string
+	db          *sql.DB
+	cookieName  string
+	environment string
 )
 
+func CookieName(c string) {
+	cookieName = c
+}
+func Environment(e string) {
+	environment = e
+}
+func DB(d *sql.DB) {
+	db = d
+}
 func init() {
-
 	c, err := goconfig.ReadConfigFile("config")
 	if err != nil {
 		panic(err)
@@ -53,11 +59,6 @@ func init() {
 		panic(err)
 	}
 	oauthCfg.RedirectURL = url + "oauth2callback"
-//	stmtCookieIns = sth( "INSERT INTO sessions (name,userid) VALUES( ? ,?  )")
-//	stmtGetUserId = sth( "select name from sessions where userid = ?")
-//	stmtGetUsername = sth( "select username from users where email = ?")
-//	stmtInsertUser = sth( "insert into users (username,email) values ( ?, ?) ")
-//	stmtGetUser = sth( "select u.username from users as u, sessions as s where s.userid = ? and s.name=u.email")
 }
 
 // Start the authorization process
@@ -112,9 +113,10 @@ func handleOAuth2Callback(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err.Error())
 	}
-	var authString = randomString(64)
+	var authString = u.RandomString(64)
 	makeSureUserExists(m["email"].(string))
-	_, err = stmtCookieIns.Exec(m["email"], hash(authString))
+	stmtCookieIns := u.Sth(db, "INSERT INTO sessions (name,userid) VALUES( ? ,?  )")
+	_, err = stmtCookieIns.Exec(m["email"], u.GetHash(authString))
 
 	if err != nil {
 		panic(err.Error())
@@ -127,35 +129,44 @@ func handleOAuth2Callback(w http.ResponseWriter, r *http.Request) {
 }
 func makeSureUserExists(e string) {
 	var userId string
+	stmtGetUsername := u.Sth(db, "select username from users where email = ?")
 	err := stmtGetUsername.QueryRow(e).Scan(&userId)
 	if err != nil {
 		// in this case, emans there's no username - create one
+		stmtInsertUser := u.Sth(db, "insert into users (username,email) values ( ?, ?) ")
 		_, err = stmtInsertUser.Exec(e, e)
 	}
 }
-func loggedIn(w http.ResponseWriter, r *http.Request) bool {
+func LoggedIn(w http.ResponseWriter, r *http.Request) (loggedIn bool, userName string) {
 	if environment == "test" {
 		userName = "chris"
-		return true
+		loggedIn = true
+		return loggedIn, userName
 	}
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
 		//just means that the cookie doesn't exist or we couldn't read it
-		return false
+		loggedIn = false
+		userName = ""
+		return loggedIn, userName
 	}
 	tok := cookie.Value
-	tokHash := hash(tok)
+	tokHash := u.GetHash(tok)
 	var userId string
+	stmtGetUser := u.Sth(db, "select u.username from users as u, sessions as s where s.userid = ? and s.name=u.email")
 	err = stmtGetUser.QueryRow(tokHash).Scan(&userId) // WHERE number = 13
-	if err != nil {
-		return false //probably no rows in result set
+	if err != nil {                                   //probably no results in query
+		loggedIn = false
+		userName = ""
+		return loggedIn, userName
 	}
 
 	if userId != "" {
 		userName = userId
-		return true
-	} else {
-		return false
+		loggedIn = true
+		return loggedIn, userName
 	}
-	return false
+	loggedIn = false
+	userName = ""
+	return loggedIn, userName
 }

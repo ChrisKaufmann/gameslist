@@ -8,7 +8,7 @@ import (
 )
 
 func TestCollection(t *testing.T) {
-	print("Testing Game\n")
+	print("Testing Collection\n")
 	initTest(t)
 
 	//adding consoles
@@ -41,6 +41,7 @@ func TestCollection(t *testing.T) {
 	ec(t, "Add game4", err)
 	_, err = AddGame("game5", c1)
 	ec(t, "Add game5", err)
+
 	//Get new collection
 	print("\tGet new collection\n")
 	coll := GetCollection(1)
@@ -59,9 +60,15 @@ func TestCollection(t *testing.T) {
 	//Get collected consoles
 	print("\tGet list of consoles\n")
 	cl, err := coll.Consoles()
-	print("cl length:"+u.Tostr(len(cl))+"\n")
 	ec(t, "collection.Consoles",err)
-	coll.Print()
+	vl(t,"console length",3,len(cl))
+
+	//Delete a console
+	print("\tDeleting Console\n")
+	err = coll.DeleteConsole(c3)
+	ec(t, "collection.DeleteConsole",err)
+	cl, err = coll.Consoles()
+	vl(t,"console length after delete",2,len(cl))
 
 	//Add games
 	print("\tAdd games\n")
@@ -72,8 +79,24 @@ func TestCollection(t *testing.T) {
 	err = coll.AddGame(g3)
 	ec(t, "Add Game 3", err)
 
-	//Delete a console
+	//Games
+	print("\tcollection.Games()\n")
+	gl, err := coll.Games()
+	ec(t,"collection.Games",err)
+	vl(t,"coll.Games length",3,len(gl))
+
+	//console games
+	print("\tConsole Games\n")
+	cgl, err := coll.ConsoleGames(c1)
+	ec(t, "coll.ConsoleGames", err)
+	vl(t, "coll.ConsoleGames.length",2,len(cgl))
 
 	//Delete games
+	print("\tDelete game from collection\n")
+	err = coll.DeleteGame(g3)
+	ec(t, "coll.DeleteGame", err)
+	gl, err = coll.Games()
+	ec(t, "coll.games", err)
+	vl(t, "coll.Games.length",2,len(gl))
 
 }

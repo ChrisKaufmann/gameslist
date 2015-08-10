@@ -1,6 +1,8 @@
 package game
 
 import (
+	"fmt"
+	"errors"
     u "github.com/ChrisKaufmann/goutils"
     "database/sql"
     _ "github.com/go-sql-driver/mysql"
@@ -41,7 +43,8 @@ func TestGame(t *testing.T) {
 	err = g1.Save();ec(t,"Save Game1",err)
 //Get a game
 	print("\tGetting a game\n")
-	g999 := GetGame(g1.ID)
+	g999,err := GetGame(g1.ID)
+	ec(t,"get game", err)
 	if g999.Name != "Game 1" {
 		t.Errorf("name doesn't match for g1,g999: "+g1.Name+"<=>"+g999.Name+"\n", err)
 	}
@@ -52,16 +55,24 @@ func TestGame(t *testing.T) {
 
 //get list of all games
 	print("\tGetting alist of all games\n")
-	gl := GetAllGames()
+	gl,err := GetAllGames()
+	ec(t, "get all games", err)
 	if len(gl) != 4 {
 		t.Errorf("Length of GetAllGames incorrect, expected 4, got "+u.Tostr(len(gl))+"\n")
 	}
 
 //get games by console - already tested in console, but why not
 	print("\tGetting a list of games by console\n")
-	gl1 := GetGamesByConsole(c1)
+	gl1, err := GetGamesByConsole(c1)
+	ec(t, "Get games by console",err)
 	if len(gl1) != 2 {
 		t.Errorf("Length of getgamesbyconsole incorrect, expected 2, got "+u.Tostr(len(gl1))+"\n")
+	}
+}
+func vl(t *testing.T,s string, e interface{}, a interface{}) {
+	if e != a {
+		err := errors.New("expected: "+u.Tostr(e)+" got: "+u.Tostr(a)+"\n")
+		t.Errorf(s, err)
 	}
 }
 func ec(t *testing.T,s string, err error) {
@@ -73,19 +84,19 @@ func initTest(t *testing.T)  {
     c, err := goconfig.ReadConfigFile("config")
     db_name, err := c.GetString("DB", "db")
     if err != nil {
-        err.Error()
+        err.Error();fmt.Println(err)
     }
     db_host, err := c.GetString("DB", "host")
     if err != nil {
-        err.Error()
+        err.Error();fmt.Println(err)
     }
     db_user, err := c.GetString("DB", "user")
     if err != nil {
-        err.Error()
+        err.Error();fmt.Println(err)
     }
     db_pass, err := c.GetString("DB", "pass")
     if err != nil {
-        err.Error()
+        err.Error();fmt.Println(err)
     }
     db, err = sql.Open("mysql", db_user+":"+db_pass+"@"+db_host+"/"+db_name)
     if err != nil {

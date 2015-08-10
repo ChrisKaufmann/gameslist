@@ -48,7 +48,8 @@ func TestConsole(t *testing.T) {
 
 //get list of games by console
 	print("\tGetting list of games by console\n")
-	gl := c1.Games()
+	gl,err := c1.Games()
+	ec(t,"Get list by console", err)
 	if len(gl)!= 5 {
 		t.Errorf("Length of console.Games list is incorrect, expected 5, got "+u.Tostr(len(gl))+"\n")
 	}
@@ -64,11 +65,13 @@ func TestConsole(t *testing.T) {
 	}
 //find console game(s)
 	print("\tFinding console games\n")
-	gfl := c1.FindGame("game")
+	gfl,err := c1.FindGame("game")
+	ec(t,"find console games",err)
 	if len(gfl) != 5 {
 		t.Errorf("Length of c1.FindGame exptected 4, got "+u.Tostr(len(gfl))+"\n")
 	}
-	gfl2 := c1.FindGame("game2")
+	gfl2,err := c1.FindGame("game2")
+	ec(t,"findgame", err)
 	if len(gfl2) != 1 {
 		t.Errorf("Length of c1.FindGame exptected 1, got "+u.Tostr(len(gfl2))+"\n")
 	}

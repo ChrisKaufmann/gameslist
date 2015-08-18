@@ -103,70 +103,65 @@ func handleOAuth2Callback(w http.ResponseWriter, r *http.Request) {
 	defer req.Body.Close()
 	body, _ := ioutil.ReadAll(req.Body)
 	log.Println(string(body))
-	//print(string(body))
 	//body.id is the google id to use
 	//set a cookie with the id, and random hash. then save the id/hash pair to db for lookup
 	var f interface{}
 	err = json.Unmarshal(body, &f)
+	if err != nil {fmt.Println(err);err.Error();return}
 	m := f.(map[string]interface{})
 	print(m["email"].(string))
-	if err != nil {
-		panic(err.Error())
-	}
 	var authString = u.RandomString(64)
-	makeSureUserExists(m["email"].(string))
-	stmtCookieIns := u.Sth(db, "INSERT INTO sessions (name,userid) VALUES( ? ,?  )")
-	_, err = stmtCookieIns.Exec(m["email"], u.GetHash(authString))
+	uid,err := makeSureUserExists(m["email"].(string))
+	if err != nil { fmt.Println(err);err.Error();return }
+	stmtCookieIns,err := u.Sth(db, "INSERT INTO sessions (user_id,session_hash) VALUES( ? ,?  )")
+	if err != nil {	err.Error();fmt.Println(err);return	}
+	_, err = stmtCookieIns.Exec(uid, u.GetHash(authString))
 
-	if err != nil {
-		panic(err.Error())
-	}
+	if err != nil {	err.Error();fmt.Println(err);return	}
 	//set the cookie
 	expire := time.Now().AddDate(1, 0, 0) // year expirey seems reasonable
 	cookie := http.Cookie{Name: cookieName, Value: authString, Expires: expire}
 	http.SetCookie(w, &cookie)
 	http.Redirect(w, r, "/main", http.StatusFound)
 }
-func makeSureUserExists(e string) {
-	var userId string
-	stmtGetUsername := u.Sth(db, "select username from users where email = ?")
-	err := stmtGetUsername.QueryRow(e).Scan(&userId)
+func makeSureUserExists(e string)(uid int, err error) {
+	stmtGetUserID,err := u.Sth(db, "select id from users where email = ?")
+	if err != nil {	err.Error();fmt.Println(err);return uid, err}
+	err = stmtGetUserID.QueryRow(e).Scan(&uid)
 	if err != nil {
 		// in this case, emans there's no username - create one
-		stmtInsertUser := u.Sth(db, "insert into users (username,email) values ( ?, ?) ")
-		_, err = stmtInsertUser.Exec(e, e)
+		stmtInsertUser,err := u.Sth(db, "insert into users (email) values (?) ")
+		if err != nil {
+			err.Error();fmt.Println(err);return uid, err
+		}
+		result, err := stmtInsertUser.Exec(e)
+        lid, err := result.LastInsertId()
+        uid=int(lid)
 	}
+	return uid, err
 }
-func LoggedIn(w http.ResponseWriter, r *http.Request) (loggedIn bool, userName string) {
+func LoggedIn(w http.ResponseWriter, r *http.Request) (bool, int) {
+	var userId int
 	if environment == "test" {
-		userName = "chris"
-		loggedIn = true
-		return loggedIn, userName
+		return true, 1
 	}
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
 		//just means that the cookie doesn't exist or we couldn't read it
-		loggedIn = false
-		userName = ""
-		return loggedIn, userName
+		return false, 0
 	}
-	tok := cookie.Value
-	tokHash := u.GetHash(tok)
-	var userId string
-	stmtGetUser := u.Sth(db, "select u.username from users as u, sessions as s where s.userid = ? and s.name=u.email")
-	err = stmtGetUser.QueryRow(tokHash).Scan(&userId) // WHERE number = 13
-	if err != nil {                                   //probably no results in query
-		loggedIn = false
-		userName = ""
-		return loggedIn, userName
+	tokHash := u.GetHash(cookie.Value)
+	stmtGetUser,err := u.Sth(db, "select id from sessions as s where s.session_hash = ?")
+	if err != nil {
+		err.Error();fmt.Println(err);return false, 0
+	}
+	err = stmtGetUser.QueryRow(tokHash).Scan(&userId)
+	if err != nil {                     //probably no results in query
+		return false,0
 	}
 
-	if userId != "" {
-		userName = userId
-		loggedIn = true
-		return loggedIn, userName
+	if userId > 0 {
+		return true, userId
 	}
-	loggedIn = false
-	userName = ""
-	return loggedIn, userName
+	return false, 0
 }

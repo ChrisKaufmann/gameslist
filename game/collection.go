@@ -1,114 +1,83 @@
 package game
 
-//Collection :)
-
 import (
-	"fmt"
-	"errors"
 	u "github.com/ChrisKaufmann/goutils"
+	"fmt"
 )
 
+var (
+)
 type Collection struct {
-	UserID int
+	UserID		int
 }
 
-// object functions
-func (cl Collection) Print() {
-	cc, err := cl.Consoles()
-	if err != nil {
-		err.Error();fmt.Println(err)
-		return
-	}
-	print("Print collection\n")
-	for _, c := range cc {
-		print("\tConsole:" + c.Name +"\n")
-		gl, err := cl.ConsoleGames(c)
-		if err != nil {
-			err.Error();fmt.Println(err)
-			return
-		}
-		for _, g := range gl {
-			print("\t\tGame:"+g.Name +"\n")
+
+// Object function
+func (coll Collection) Print() {
+print("Printing collection\n")
+	cons, err := coll.Consoles()
+print("len of consoles:"+u.Tostr(len(cons))+"\n")
+	if err != nil {err.Error();fmt.Println(err);return}
+	for _, c := range cons {
+		print(c.Name+"\n")
+		cgl, err := coll.ConsoleGames(c)
+		if err != nil {err.Error();fmt.Println(err);return}
+		for _, g := range cgl {
+			print("\t"+g.Name+"\n")
 		}
 	}
+	print("\n")
 }
-func (cl Collection) AddConsole(c Console) (err error) {
-	stmt,err := u.Sth(db,"insert into consolecollection (user_id,console_id) values (?,?)")
+func (coll Collection) Have (t Thing) (h bool) {
+	h=false
+	stmt, err := u.Sth(db,"select count(*) from collection where thing_id=? and user_id=?")
+	if err != nil {err.Error();fmt.Println(err);return h}
+	var c int
+	err = stmt.QueryRow(t.ID,coll.UserID).Scan(&c)
+	if err != nil {err.Error();fmt.Println(err);return h}
+	if c > 0 {
+		return true
+	}
+	return false
+}
+func (coll Collection) Add(t Thing) (err error) {
+	stmt,err := u.Sth(db,"insert into collection (user_id, thing_id) values (?,?)")
 	if err != nil {err.Error();fmt.Println(err);return err}
-	_, err = stmt.Exec(cl.UserID, c.ID)
+	_, err = stmt.Exec(coll.UserID,t.ID)
 	return err
 }
-func (cl Collection) DeleteConsole(c Console) (err error) {
-	stmt, err := u.Sth(db, "delete from consolecollection where user_id=? and console_id=? limit 1")
-	if c.ID < 1 || c.ID != int(c.ID){
-		err = errors.New("Bad id passed to collection.DeleteConsole")
-		return err
-	}
-	_, err = stmt.Exec(cl.UserID, c.ID)
+func (coll Collection) Delete(t Thing) (err error) {
+	stmt, err := u.Sth(db, "delete from collection where user_id=? and id=? limit 1")
+	_, err = stmt.Exec(coll.UserID, t.ID)
 	return err
 }
-func (cl Collection) Games() (gl []Game, err error) {
-	stmt,err := u.Sth(db, "select game_id from gamecollection where user_id=?")
-	if err != nil {err.Error();fmt.Println(err); return gl, err}
-	rows, err := stmt.Query(u.Tostr(cl.UserID))
-	if err != nil {err.Error();fmt.Println(err); return gl, err}
-	for rows.Next() {
-		var gid int
-		rows.Scan(&gid)
-		g,err := GetGame(gid)
-		if err != nil {err.Error();fmt.Println(err); return gl, err}
-		gl = append(gl,g)
-	}
-	return gl, err
+// Console stuff
+func (coll Collection) Consoles() (cl []Thing, err error) {
+	stmt, err := u.Sth(db,"select "+thingSelectString+" from things , collection  where collection.user_id=? and collection.thing_id=things.id and things.type='console'")
+	return getThingsFromSthP(stmt,coll.UserID)
 }
-func (cl Collection) Consoles() (ncl []Console, err error) {
-	stmt,err := u.Sth(db, "select console_id from consolecollection where user_id=?")
-	if err != nil {err.Error();fmt.Println(err);return ncl,err}
-	rows, err := stmt.Query(u.Tostr(cl.UserID))
-	if err != nil {
-		err.Error();fmt.Println(err)
-		return ncl , err
-	}
-	for rows.Next() {
-		var id int
-		rows.Scan(&id)
-		c := GetConsole(id)
-		ncl = append(ncl, c)
-	}
-	return ncl, err
+func (coll Collection) ConsoleGames(c Thing) (gl []Thing, err error) {
+	stmt, err := u.Sth(db, "select "+thingSelectString+" from things , collection  where collection.user_id=? and collection.thing_id=things.id and things.type='game' and things.parent_id=?")
+	return getThingsFromSthPP(stmt,coll.UserID,c.ID)
 }
-func (cl Collection) ConsoleGames(c Console) (gl []Game, err error) {
-	stmt,err := u.Sth(db, "select g.id from games as g, consolecollection as cc,gamecollection as gc  where cc.user_id=? and cc.console_id=? and cc.console_id=g.console_id and g.ID=gc.game_id")
-	if err != nil {err.Error();fmt.Println(err);return gl,err}
-	rows, err := stmt.Query(u.Tostr(cl.UserID),c.ID)
-	if err != nil {
-		err.Error();fmt.Println(err)
-		return gl, err
-	}
-	for rows.Next() {
-		var id int
-		rows.Scan(&id)
-		g,err := GetGame(id)
-		if err != nil {err.Error();fmt.Println(err);return gl,err}
-		gl = append(gl,g)
-	}
-	return gl, err
-}
-func (cl Collection) AddGame(g Game) (err error) {
-	stmt,err := u.Sth(db, "insert into gamecollection (user_id,game_id) values (?,?)")
-	if err != nil {err.Error();fmt.Println(err);return err}
-	_, err = stmt.Exec(cl.UserID, g.ID)
-	return err
-}
-func (cl Collection) DeleteGame(g Game) (err error) {
-	stmt,err := u.Sth(db, "delete from gamecollection where user_id=? and game_id=? limit 1")
-	if err != nil {err.Error();fmt.Println(err);return err}
-	_, err = stmt.Exec(cl.UserID, g.ID)
-	return err
+// Game stuff
+func (coll Collection) Games() (gl []Thing, err error) {
+	stmt, err := u.Sth(db,"select t.id from things as t, collection as c where c.user_id=? and c.thing_id=t.id and t.type='game'")
+	return getThingsFromSthP(stmt,coll.UserID)
 }
 
-//non object functions down here
-func GetCollection(uid int) (c Collection) {
-	c.UserID = int(uid)
-	return c
+func (coll Collection) Boxes() (gl []Thing, err error) {
+	stmt, err := u.Sth(db,"select t.id from things as t, collection as c where c.user_id=? and c.thing_id=t.id and t.type='box'")
+	return getThingsFromSthP(stmt,coll.UserID)
+}
+func (coll Collection) Manuals() (gl []Thing, err error) {
+	stmt, err := u.Sth(db,"select t.id from things as t, collection as c where c.user_id=? and c.thing_id=t.id and t.type='manual'")
+	return getThingsFromSthP(stmt,coll.UserID)
+}
+
+//Non Object Functions
+
+func GetCollection(uid int)(coll Collection, err error) {
+	coll.UserID=uid
+	return coll, err
 }

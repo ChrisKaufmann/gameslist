@@ -15,10 +15,12 @@ import (
 var (
 	port        string
 	environment string
-	//mc          = easymemcache.New("127.0.0.1:11211")
-	cookieName string
-	indexHtml  = template.Must(template.ParseFiles("templates/index-nologin.html"))
+	//mc		= easymemcache.New("127.0.0.1:11211")
+	cookieName	string
+	indexHtml	= template.Must(template.ParseFiles("templates/index-nologin.html"))
+	mainHtml	= template.Must(template.ParseFiles("templates/main.html"))
 	db         *sql.DB
+	consoleListEntryHtml	= template.Must(template.ParseFiles("templates/consolelist_entry.html"))
 )
 
 func init() {
@@ -59,10 +61,12 @@ func main() {
 	auth.DB(db)
 	game.DB(db)
 	http.HandleFunc("/", handleRoot)
-	http.HandleFunc("/main", handleMain)
+	http.HandleFunc("/main.html", handleMain)
 	http.HandleFunc("/list", handleList)
+	http.HandleFunc("/list/consoles", handleConsoleList)
 	http.HandleFunc("/collection",handleCollection)
 	http.HandleFunc("/mycollection",handleMyCollection)
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	print("Listening on port " + port + "\n")
 	http.ListenAndServe("127.0.0.1:"+port, nil)
 }
@@ -74,13 +78,28 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	} else {
-		http.Redirect(w, r, "/main", http.StatusFound)
+		http.Redirect(w, r, "/main.html", http.StatusFound)
 	}
 }
 func handleMain(w http.ResponseWriter, r *http.Request) {
-	//print link to "my collection"
-	fmt.Fprintf(w,"<a href='mycollection'>My Collection</a><br>")
-	//print list of consoles first
+	loggedin, _ := auth.LoggedIn(w, r)
+	if ! loggedin { http.Redirect(w,r,"/", http.StatusFound)}
+	if err := mainHtml.Execute(w, nil); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+func handleList(w http.ResponseWriter, r *http.Request) {
+	return
+}
+func handleConsoleList(w http.ResponseWriter, r *http.Request) {
+	loggedin, userID := auth.LoggedIn(w, r)
+	if ! loggedin { http.Redirect(w,r,"/", http.StatusFound)}
+	coll, err := game.GetCollection(userID)
+	if err != nil {fmt.Println(err);err.Error();return}
+	cons, err := coll.Consoles()
+	for _, c := range(cons) {
+		consoleListEntryHtml.Execute(w,c)
+	}
 
 }
 func handleCollection(w http.ResponseWriter, r *http.Request) {
@@ -101,7 +120,7 @@ func handleMyCollection(w http.ResponseWriter, r *http.Request) {
 	if err != nil {fmt.Println(err);err.Error();return}
 	cons, err := coll.Consoles()
 	for _, c := range(cons) {
-		fmt.Fprintf(w,c.Name+"\n")
+		consoleListEntryHtml.Execute(w,c)
 		gl, err := coll.ConsoleGames(c)
 		if err != nil {fmt.Println(err);err.Error();return}
 		cons_box, err := c.Box()

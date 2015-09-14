@@ -12,7 +12,6 @@ import (
 )
 
 func TestThing(t *testing.T) {
-return
 	print("Testing Thing\n")
 	initTest(t)
 //Add things

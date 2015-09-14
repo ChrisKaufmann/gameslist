@@ -1,0 +1,12 @@
+div.toggle_selected {
+	width: 30%;
+	padding: 10px;
+	background-color: #5050aa;
+	float: left;
+}
+div.toggle {
+	width: 30%;
+	padding: 10px;
+	background-color: white;
+	float: left;
+}

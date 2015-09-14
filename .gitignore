@@ -1,1 +1,4 @@
 config
+nohup.out
+runme
+tmp/*

@@ -3,23 +3,26 @@
 	<title></title>
 	<script type="text/javascript" src="static/jquery.js"></script>
 	<script type="text/javascript" src="static/gameslist.js"></script>
-
-<!--	<link rel="stylesheet" href="static/gameslist.css" type="text/css"> -->
+	<link rel="stylesheet" href="static/gameslist.css"> 
 </head>
-<body onload='javascript:showConsoles()'>
+<body onload='javascript:show("collection","owned")'>
 	<div class="header" id="header">
-		<table width='100%' border=1>
-			<tr border=1>
-				<td width='30%' onclick='javascript:showConsoles()'><div id="header-consoles">Consoles</div></td>
-				<td width='30%' onclick='javascript:showGames()'><div id="header-games">Games</div></td>
-				<td width='30%' onclick='javascript:showMisc()'><div id="header-misc">Misc</div></td>
+		<table width='100%' >
+			<tr>
+				<td>
+				<div id='header-collection' style="width:30%;padding:10px;background-color:#c9cccc;float:left;" onclick='javascript:show("collection","owned")'>Collection</div>
+				<div id='header-consoles' style="width:30%;padding:10px;background-color:#dbdbdb;float:left;" onclick='javascript:show("consoles","owned")'>Consoles</div>
+				<div id='header-games' style="width:30%;padding:10px;background-color:#c9cccc;float:left;" onclick='javascript:show("games","owned")'>Games</div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<div id="toggle_container"></div>
+				</td>
 			</tr>
 		</table>
 	</div>
-	<div class="raw_list" id="all_consoles_list">
-
-	</div>
-
+	<div class="raw_list" id="content_div"></div>
 </body>
 </html>
 

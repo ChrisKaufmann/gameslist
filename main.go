@@ -26,7 +26,9 @@ var (
 	ConsolesToggle = template.Must(template.ParseFiles("templates/consoles_toggle.html"))
 	GamesToggle = template.Must(template.ParseFiles("templates/games_toggle.html"))
 	IndentListEntryHtml	= template.Must(template.ParseFiles("templates/indent_list_entry.html"))
+	ConsoleLinkListEntry= template.Must(template.ParseFiles("templates/console_link_list_entry.html"))
 	AddConsoleHTML	=	template.Must(template.ParseFiles("templates/add_console.html"))
+	AddGameHTML	=	template.Must(template.ParseFiles("templates/add_game.html"))
 )
 
 func init() {
@@ -193,25 +195,34 @@ func handleGameList(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("handleGameList, after getcollection %v\n", time.Now().Sub(t0))
     if err != nil {fmt.Println(err);err.Error();return}
 	var gl []game.MyThing
+	mytem := ListEntryHtml
 	switch r.FormValue("filter"){
 		case "all":
-			tl, err := game.GetAllGames()
-			fmt.Printf("handleGameList, after GetAllGames %v\n", time.Now().Sub(t0))
+			mytem=ConsoleLinkListEntry
+			tl, err := game.GetAllConsoles()
 			if err != nil {fmt.Println(err);err.Error();return}
 			gl = coll.MyThingsFromThings(tl)
-			fmt.Printf("handleGameList, after Mythingsfromthings %v\n", time.Now().Sub(t0))
+		case "console":
+			cid:=r.FormValue("console_id")
+			if cid=="" {return}
+			con, err := game.GetThing(cid)
+			if err != nil {fmt.Println(err);err.Error();return}
+			tl, err := con.Games()
+			if err != nil {fmt.Println(err);err.Error();return}
+			gl  = coll.MyThingsFromThings(tl)
 		case "missing":
 			return
 		default:
 			gl, err = coll.Games()
 	}
 	fmt.Printf("handleGameList, before execute loop %v\n", time.Now().Sub(t0))
+	AddGameHTML.Execute(w,coll)
 	for _, g := range gl {
 		p := game.PrintMyThing{g,"white","white","white"}
 		if coll.Have(p.Thing){p.Background="#aaffa5"}
 		if coll.Have(p.Thing.Box()){p.BoxBackground="#aaffa5"}
 		if coll.Have(p.Thing.Manual()){p.ManualBackground="#aaffa5"}
-		ListEntryHtml.Execute(w,p)
+		mytem.Execute(w,p)
 	}
 	t1 := time.Now()
 	fmt.Printf("handleGameList %v\n", t1.Sub(t0))
@@ -272,10 +283,11 @@ func handleMyCollection(w http.ResponseWriter, r *http.Request) {
 		gl, err := coll.ConsoleGames(c)
 		if err != nil {fmt.Println(err);err.Error();return}
 		for _, g := range(gl) {
-			pg := game.PrintMyThing{g,"#aaffa5","white","white"}
+			pg := game.PrintMyThing{g,"white","white","white"}
+			pg.Name="----------"+pg.Name
 			if coll.Have(pg.Thing.Box()){pg.BoxBackground="#aaffa5"}
 			if coll.Have(pg.Thing.Manual()){pg.ManualBackground="#aaffa5"}
-			IndentListEntryHtml.Execute(w,pg)
+			ListEntryHtml.Execute(w,pg)
 		}
 	}
 	orphans, err := coll.OrphanGames()

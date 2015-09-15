@@ -26,6 +26,16 @@ function show(thingtoshow,filter)
 			}
 		})
 }
+function show_games(console_id)
+{
+	$.ajax({
+		type: "GET", url: '/list/games?filter=console&console_id='+console_id,
+		success:function(html){
+			$('#div_thing'+console_id).css("border","3px solid");
+			$('#games_list_'+console_id).html(html)
+		}
+	})
+}
 function add_console(form)
 {
         $('menu_status').innerHTML='Adding...';
@@ -35,6 +45,17 @@ function add_console(form)
                 $('#menu_status').html(html);
                 form.add_console_text.value="";
         }})
+}
+function add_game(form)
+{
+	var newgame = form.add_game_text.value;
+	var index=form.add_game_select.selectedIndex;
+	var selvalue=form.add_game_select.options[index].value;
+	var data="console_id="+selvalue+"&game_name="+newgame
+	$.ajax({type: "POST", url: '/console/newgame', data:data, success:function(html){
+		$('$menu_status').html(html);
+		form.add_game_text.value="";
+	}})
 }
 function toggle_owned(id)
 {

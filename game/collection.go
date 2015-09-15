@@ -4,6 +4,7 @@ package game
 import (
 	u "github.com/ChrisKaufmann/goutils"
 	"fmt"
+	"html/template"
 )
 
 type Collection struct {
@@ -135,4 +136,15 @@ func (coll Collection) MyThingsFromThings(tl []Thing)(mytl []MyThing) {
 func GetCollection(uid int)(coll Collection, err error) {
 	coll.UserID=uid
 	return coll, err
+}
+func (coll Collection) ConsoleSelect() (t template.HTML) {
+    cl, err := GetAllConsoles()
+	var s string
+    if err != nil {
+        err.Error();print(err)
+    }
+    for _,c := range cl {
+        s = s+"<option value='"+u.Tostr(c.ID)+"'>"+c.Name+"\n"
+    }
+    return template.HTML(s)
 }

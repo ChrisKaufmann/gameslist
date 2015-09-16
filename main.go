@@ -230,7 +230,7 @@ func handleGameList(w http.ResponseWriter, r *http.Request) {
 		if coll.Have(p.Thing){p.Background="#aaffa5"}
 		if coll.Have(p.Thing.Box()){p.BoxBackground="#aaffa5"}
 		if coll.Have(p.Thing.Manual()){p.ManualBackground="#aaffa5"}
-		mytem.Execute(w,p)
+		mytem.Execute(w,&p)
 	}
 	fmt.Fprintf(w,"</table>")
 	t1 := time.Now()

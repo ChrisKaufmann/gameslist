@@ -125,7 +125,7 @@ insert into things (name, parent_id, type) select 'Surround', id, 'game' from th
 insert into things (name, parent_id, type) select 'Swordquest: Earthworld', id, 'game' from things where name='Atari 2600';
 insert into things (name, parent_id, type) select 'Swordquest: Fireworld', id, 'game' from things where name='Atari 2600';
 insert into things (name, parent_id, type) select 'Swordquest: Waterworld', id, 'game' from things where name='Atari 2600';
-insert into things (name, parent_id, type) select 'Ta', id, 'game' from things where name='Atari 2600';z
+insert into things (name, parent_id, type) select 'Ta', id, 'game' from things where name='Atari 2600';
 insert into things (name, parent_id, type) select 'Track & Field', id, 'game' from things where name='Atari 2600';
 insert into things (name, parent_id, type) select 'Vanguard', id, 'game' from things where name='Atari 2600';
 insert into things (name, parent_id, type) select 'Video Checkers', id, 'game' from things where name='Atari 2600';
@@ -308,7 +308,7 @@ insert into things (name, parent_id, type) select 'Laser Gates', id, 'game' from
 insert into things (name, parent_id, type) select 'Laser Volley', id, 'game' from things where name='Atari 2600';
 insert into things (name, parent_id, type) select 'Lochjaw', id, 'game' from things where name='Atari 2600';
 insert into things (name, parent_id, type) select 'Lock n Chase', id, 'game' from things where name='Atari 2600';
-insert into things (name, parent_id, type) select 'London Blit', id, 'game' from things where name='Atari 2600';z
+insert into things (name, parent_id, type) select 'London Blit', id, 'game' from things where name='Atari 2600';
 insert into things (name, parent_id, type) select 'Lost Luggage', id, 'game' from things where name='Atari 2600';
 insert into things (name, parent_id, type) select 'M.A.D.', id, 'game' from things where name='Atari 2600';
 insert into things (name, parent_id, type) select 'MagiCard', id, 'game' from things where name='Atari 2600';

@@ -12,12 +12,13 @@ import (
 	"net/http"
 	u "github.com/ChrisKaufmann/goutils"
 	"fmt"
+	"github.com/ChrisKaufmann/easymemcache"
 )
 
 var (
 	port        string
 	environment string
-	//mc		= easymemcache.New("127.0.0.1:11211")
+	mc		= easymemcache.New("127.0.0.1:11211")
 	cookieName	string
 	indexHtml	= template.Must(template.ParseFiles("templates/index-nologin.html"))
 	mainHtml	= template.Must(template.ParseFiles("templates/main.html"))
@@ -68,6 +69,7 @@ func main() {
 	defer db.Close()
 	auth.DB(db)
 	game.DB(db)
+	game.MemCache(&mc)
 	http.HandleFunc("/main.html", handleMain)
 	http.HandleFunc("/list", handleList)
 	http.HandleFunc("/list/consoles", handleConsoleList)
@@ -176,7 +178,7 @@ func handleConsoleList(w http.ResponseWriter, r *http.Request) {
 			cons, err = coll.Consoles()
 			if err != nil {fmt.Println(err);err.Error();return}
 	}
-	AddConsoleHTML.Execute(w,nil)
+	fmt.Fprintf(w,"<table>")
 	for _, c := range(cons) {
 		p := game.PrintMyThing{c,"white","white","white"}
 		if coll.Have(p.Thing){p.Background="#aaffa5"}
@@ -184,6 +186,10 @@ func handleConsoleList(w http.ResponseWriter, r *http.Request) {
 		if coll.Have(p.Thing.Manual()){p.ManualBackground="#aaffa5"}
 		ListEntryHtml.Execute(w,p)
 	}
+	fmt.Fprintf(w,"<tr><td colspan=3>")
+	AddConsoleHTML.Execute(w,nil)
+	fmt.Fprintf(w,"</td></tr>")
+	fmt.Fprintf(w,"</table>")
 	t1 := time.Now()
 	fmt.Printf("handleConsoleList %v\n", t1.Sub(t0))
 }
@@ -198,6 +204,7 @@ func handleGameList(w http.ResponseWriter, r *http.Request) {
 	mytem := ListEntryHtml
 	switch r.FormValue("filter"){
 		case "all":
+			AddGameHTML.Execute(w,coll)
 			mytem=ConsoleLinkListEntry
 			tl, err := game.GetAllConsoles()
 			if err != nil {fmt.Println(err);err.Error();return}
@@ -214,9 +221,10 @@ func handleGameList(w http.ResponseWriter, r *http.Request) {
 			return
 		default:
 			gl, err = coll.Games()
+			AddGameHTML.Execute(w,coll)
 	}
 	fmt.Printf("handleGameList, before execute loop %v\n", time.Now().Sub(t0))
-	AddGameHTML.Execute(w,coll)
+	fmt.Fprintf(w,"<table>")
 	for _, g := range gl {
 		p := game.PrintMyThing{g,"white","white","white"}
 		if coll.Have(p.Thing){p.Background="#aaffa5"}
@@ -224,6 +232,7 @@ func handleGameList(w http.ResponseWriter, r *http.Request) {
 		if coll.Have(p.Thing.Manual()){p.ManualBackground="#aaffa5"}
 		mytem.Execute(w,p)
 	}
+	fmt.Fprintf(w,"</table>")
 	t1 := time.Now()
 	fmt.Printf("handleGameList %v\n", t1.Sub(t0))
 }
@@ -252,6 +261,7 @@ func handleConsole(w http.ResponseWriter, r *http.Request) {
 	var todo string
 	var param string
 	u.PathVars(r,"/console/",&todo,&param)
+	print("todo: "+todo+", param: "+param)
 	switch todo {
 		case "new":
 			_, err := game.AddThing(param,"console")
@@ -260,7 +270,23 @@ func handleConsole(w http.ResponseWriter, r *http.Request) {
 			}
 		case "newgame":
 			console_id := r.FormValue("console_id")
-			_, err := game.GetThing(console_id)
+			if console_id=="" {
+				err = errors.New("No console_id passed to handleConsole(newgame)")
+				err.Error()
+				fmt.Println(err)
+				return
+			}
+			game_name := r.FormValue("game_name")
+			print("console_id: "+console_id+", name: "+game_name)
+			if game_name==""{
+				err = errors.New("No game_name passed to handleConsole(newgame)")
+				err.Error()
+				fmt.Println(err)
+				return
+			}
+			console, err := game.GetThing(console_id)
+			if err != nil {fmt.Println(err);err.Error();return}
+			_, err = console.AddGame(game_name)
 			if err != nil {fmt.Println(err);err.Error();return}
 	}
 
@@ -282,6 +308,7 @@ func handleMyCollection(w http.ResponseWriter, r *http.Request) {
 		c, err := game.GetThing(myc.ID)
 		gl, err := coll.ConsoleGames(c)
 		if err != nil {fmt.Println(err);err.Error();return}
+		fmt.Fprintf(w,"</ul>")
 		for _, g := range(gl) {
 			pg := game.PrintMyThing{g,"white","white","white"}
 			pg.Name="----------"+pg.Name
@@ -289,6 +316,7 @@ func handleMyCollection(w http.ResponseWriter, r *http.Request) {
 			if coll.Have(pg.Thing.Manual()){pg.ManualBackground="#aaffa5"}
 			ListEntryHtml.Execute(w,pg)
 		}
+		fmt.Fprintf(w,"</ul>")
 	}
 	orphans, err := coll.OrphanGames()
 	for _, myg := range orphans {

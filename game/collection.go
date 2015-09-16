@@ -53,7 +53,7 @@ func (coll Collection) Delete(t Thing) (err error) {
 }
 // Console stuff
 func (coll Collection) Consoles() (mytl []MyThing, err error) {
-	stmt, err := u.Sth(db,"select "+thingSelectString+" from things , collection  where collection.user_id=? and collection.thing_id=things.id and things.type='console'")
+	stmt, err := u.Sth(db,"select "+thingSelectString+" from things , collection  where collection.user_id=? and collection.thing_id=things.id and things.type='console' order by things.name ASC")
 	tl, err := getThingsFromSthP(stmt,coll.UserID)
 	return coll.MyThingsFromThings(tl), err
 }
@@ -76,7 +76,7 @@ func (coll Collection) MissingConsoles() (mytl []MyThing, err error) {
 	return mytl, err
 }
 func (coll Collection) ConsoleGames(c Thing) ([]MyThing, error) {
-	stmt, err := u.Sth(db, "select "+thingSelectString+" from things , collection  where collection.user_id=? and collection.thing_id=things.id and things.type='game' and things.parent_id=?")
+	stmt, err := u.Sth(db, "select "+thingSelectString+" from things , collection  where collection.user_id=? and collection.thing_id=things.id and things.type='game' and things.parent_id=? order by things.name ASC")
 	gl, err := getThingsFromSthPP(stmt,coll.UserID,c.ID)
 	return coll.MyThingsFromThings(gl), err
 }

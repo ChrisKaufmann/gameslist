@@ -1,5 +1,4 @@
-<div class='clear:left' id='entryrow-{{.ID}}'>
-	<div id="div_thing_{{.ID}}" onclick="javascript:show_games('{{.ID}}')" style='width:250px;float:left'>{{.Name}}</div>	
-</div>
+<tr>
+	<td><div id="div_thing_{{.ID}}" onclick="javascript:show_games('{{.ID}}')" ><p class="fonts">{{.Name}}</p></div></td>
 	<div id="games_list_{{.ID}}" style='position:absolute;left:250px;'></div>
-<br>
+</tr>

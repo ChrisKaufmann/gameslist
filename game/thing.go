@@ -7,6 +7,7 @@ import (
 	u "github.com/ChrisKaufmann/goutils"
 	"errors"
 	"database/sql"
+	"github.com/ChrisKaufmann/easymemcache"
 )
 const thingSelectString = " things.id,IFNULL(things.name,''),IFNULL(things.parent_id,''),things.type "
 
@@ -29,7 +30,8 @@ var (
 	stmtGetAllGames *sql.Stmt
 	stmtGetAllThings *sql.Stmt
 	stmtHaveThing	*sql.Stmt
-	db *sql.DB
+	db				*sql.DB
+	mc				*easymemcache.Client
 )
 func DB(d *sql.DB){
 	db=d
@@ -38,7 +40,7 @@ func DB(d *sql.DB){
 	if err != nil {err.Error();fmt.Println(err)}
 	stmtDeleteThing,err = u.Sth(db, "delete from things where id=? limit 1")
 	if err != nil {err.Error();fmt.Println(err)}
-	stmtGetGames, err = u.Sth(db, "select things.id,IFNULL(things.name,''),IFNULL(things.parent_id,''),things.type from things where type='game' and parent_id=?")
+	stmtGetGames, err = u.Sth(db, "select things.id,IFNULL(things.name,''),IFNULL(things.parent_id,''),things.type from things where type='game' and parent_id=? order by things.name ASC")
 	if err != nil {err.Error();fmt.Println(err)}
 	stmtGetBox, err = u.Sth(db, "select "+thingSelectString+" from things where type='box' and parent_id=?")
 	if err != nil {err.Error();fmt.Println(err)}
@@ -46,9 +48,9 @@ func DB(d *sql.DB){
 	if err != nil {err.Error();fmt.Println(err)}
 	stmtAddThing,err = u.Sth(db, "insert into things (name,type) values (?,?)")
 	if err != nil {err.Error();fmt.Println(err)}
-	stmtGetAllConsoles, err = u.Sth(db, "select "+thingSelectString+" from things where type='console'")
+	stmtGetAllConsoles, err = u.Sth(db, "select "+thingSelectString+" from things where type='console' order by things.name ASC")
 	if err != nil {err.Error();fmt.Println(err)}
-	stmtGetAllGames, err = u.Sth(db, "select "+thingSelectString+" from things where type='game'")
+	stmtGetAllGames, err = u.Sth(db, "select "+thingSelectString+" from things where type='game' order by things.name ASC")
 	if err != nil {err.Error();fmt.Println(err)}
 	stmtGetThing,err = u.Sth(db,"select "+thingSelectString+" from things where id= ?")
 	if err != nil {err.Error();fmt.Println(err)}
@@ -56,6 +58,9 @@ func DB(d *sql.DB){
 	if err != nil {err.Error();fmt.Println(err)}
 	stmtHaveThing, err = u.Sth(db,"select count(*) from collection where thing_id=? and user_id=?")
 	if err != nil {err.Error();fmt.Println(err)}
+}
+func MemCache(nmc *easymemcache.Client) () {
+	mc=nmc
 }
 
 // object functions
@@ -85,7 +90,8 @@ func (t Thing)Delete() (err error) {
 	return err
 }
 func (t Thing)Games() (tl []Thing, err error) {
-	return getThingsFromSthP(stmtGetGames, t.ID)
+	tl,err = getThingsFromSthP(stmtGetGames, t.ID)
+	return tl, err
 }
 func (t Thing)Box() (nt Thing) {
 	tl,_ := getThingsFromSthP(stmtGetBox, t.ID)
@@ -110,6 +116,15 @@ func (t Thing)Manual() (nt Thing) {
 		return nt
 	}
 	return tl[0]
+}
+func (console Thing)AddGame(n string)(nt Thing, err error) {
+	nt,err = AddThing(n, "game")
+	if err != nil {err.Error();fmt.Println(err);return nt, err}
+	nt.ParentID=console.ID
+	err = nt.Save()
+	if err != nil {err.Error();fmt.Println(err)}
+	mc.DeleteLike("games_")
+	return nt, err
 }
 //non object functions down here
 func GetGame(id int) (t Thing, err error) {

@@ -1,6 +1,14 @@
 body {
     -webkit-text-size-adjust: 100%;
 }
+div.top_menu_container {
+	width:100%;
+	background-color: #c9dddd;
+}
+div.top_menu {
+	width: 20%;
+	float:left;
+}
 div.toggle_selected {
 	width: 30%;
 	padding: 10px;
@@ -23,7 +31,9 @@ div.toggle {
      .fonts
      {
       font-size: 75%;
-     }    
+     };   
+	 .h3 
+	 { font-size : 50%; }
     }
     /* Smartphones (landscape) ----------- */
     @media only screen
@@ -31,7 +41,8 @@ div.toggle {
      .fonts
      {
       font-size: 120%;
-     }  
+     }; 
+	 .h3 { font-size: 80%; }
     }
     /* Smartphones (portrait) ----------- */
     @media only screen
@@ -39,7 +50,8 @@ div.toggle {
      .fonts
      {
       font-size: 120%;
-     }  
+     }; 
+	 .h3 { font-size: 80%; }
     }
     /* iPads (portrait and landscape) ----------- */
     @media only screen
@@ -48,7 +60,8 @@ div.toggle {
      .fonts
      {
       font-size: 120%;
-     }    
+     };   
+	 .h3 { font-size: 80%; }
     }
     /* iPads (landscape) ----------- */
     @media only screen
@@ -58,7 +71,8 @@ div.toggle {
      .fonts
      {
       font-size: 150%;
-     }    
+     };   
+	 .h3 { font-size: 100%; }
     }
     /* iPads (portrait) ----------- */
     @media only screen
@@ -69,7 +83,8 @@ div.toggle {
      .fonts
      {
       font-size: 120%;
-     }  
+     }; 
+	 .h3 { font-size: 80%; }
     }
     /* Desktops and laptops ----------- */
     @media only screen
@@ -77,7 +92,8 @@ div.toggle {
      .fonts
      {
       font-size: 156%;
-     }    
+     };
+	 .h3 { font-size: 100%; }
     }
     /* Large screens ----------- */
     @media only screen
@@ -85,7 +101,8 @@ div.toggle {
      .fonts
      {
       font-size: 200%;
-     }    
+     };   
+	 .h3 { font-size: 130%; }
     }
     /* iPhone 4 ----------- */
     @media
@@ -94,5 +111,6 @@ div.toggle {
      .fonts
      {
       font-size: 190%;
-     }    
+     }; 
+	 .h3 { font-size: 130%; }
     }

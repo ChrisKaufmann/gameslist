@@ -62,6 +62,7 @@ func init() {
 		panic(err)
 	}
 	cookieName = "gameslist_auth_" + environment
+	auth.CookieName(cookieName)
 	auth.Environment(environment)
 }
 
@@ -71,6 +72,8 @@ func main() {
 	game.DB(db)
 	game.MemCache(&mc)
 	http.HandleFunc("/main.html", handleMain)
+	http.HandleFunc("/authorize", auth.HandleAuthorize)
+	http.HandleFunc("/oauth2callback", auth.HandleOAuth2Callback)
 	http.HandleFunc("/list", handleList)
 	http.HandleFunc("/list/consoles", handleConsoleList)
 	http.HandleFunc("/list/games", handleGameList)

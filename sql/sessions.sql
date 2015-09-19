@@ -1,5 +1,5 @@
+drop table if exists `sessions`;
 create table sessions (   
-	id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT,   
-	name varchar(250) DEFAULT NULL,   
-	userid varchar(255) NOT NULL
+	user_id varchar(255) NOT NULL,
+	session_hash char(255) NOT NULL PRIMARY KEY
 );

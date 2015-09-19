@@ -8,9 +8,10 @@
 <body onload='javascript:show("collection","owned")'>
 <div id="top_menu" class="top_menu_container">
 	<div id="mycoll" class="top_menu" onclick='javascript:show("collection","owned")'><h2>Home</h2></div>
-	<div id="games-header" class="top_menu" onclick='javascript:show("games","owned")'><p class="fonts">Games</p>
+	<div id="games-header" class="top_menu">
 		<div id="games-subset">
-			<div id="my_games" onclick='javascript:show("games","owned")'><h3>Mygames</h3></div>
+			<div id="games-mygames" onclick='javascript:show("games","owned")'><p class="fonts">MyGames</p></div>
+			<div id="my_games" onclick='javascript:show("games","all")'><h3>AllGames</h3></div>
 		</div>
 	</div>
 	<div id="consoles-header" class="top_menu" onclick='javascript:show("consoles","owned")'><p class="fonts">Consoles</p>
@@ -18,6 +19,7 @@
 	</div>
 <div id='content'  style="width:100%;float:left;">
 	<div class="raw_list" style="width:30%;padding:10px;float:left" id="content_div">&nbsp;</div>
+	<div class="raw_list" style="width:30%;padding:10px;float:left" id="secondary_div">&nbsp;</div>
 </div>
 <div id="search" style="width:100%;float:left">
 	<form name='search' style="align:bottom">

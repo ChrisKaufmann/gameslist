@@ -12,7 +12,6 @@ import (
 	"log"
 	"net/http"
 	"time"
-	"errors"
 )
 
 var oauthCfg = &oauth.Config{
@@ -26,14 +25,16 @@ const profileInfoURL = "https://www.googleapis.com/oauth2/v1/userinfo"
 const cachefile = "/dev/null"
 
 var (
-	MyURL       string
-	db          *sql.DB
-	cookieName  string
-	environment string
-	stmtCookieIns *sql.Stmt
-	stmtGetUserID *sql.Stmt
-	stmtInsertUser *sql.Stmt
-	stmtGetUser	*sql.Stmt
+	MyURL			string
+	db				*sql.DB
+	cookieName		string = "auth"
+	environment		string = "production"
+	stmtCookieIns	*sql.Stmt
+	stmtGetUserID	*sql.Stmt
+	stmtInsertUser	*sql.Stmt
+	stmtGetUser		*sql.Stmt
+	stmtGetUserBySession *sql.Stmt
+	stmtSessionExists *sql.Stmt
 )
 
 func CookieName(c string) {
@@ -46,13 +47,17 @@ func DB(d *sql.DB) {
 	db = d
 	var err error
 	stmtCookieIns,err = u.Sth(db, "INSERT INTO sessions (user_id,session_hash) VALUES( ? ,?  )")
-	if err != nil {	err.Error();fmt.Println(err)}
+	if err != nil {	print("stmtCookieIns");err.Error();fmt.Println(err)}
 	stmtGetUserID,err = u.Sth(db, "select id from users where email = ?")
-	if err != nil {	err.Error();fmt.Println(err)}
+	if err != nil {	print("stmtGetUserID");err.Error();fmt.Println(err)}
 	stmtInsertUser,err = u.Sth(db, "insert into users (email) values (?) ")
-	if err != nil {	err.Error();fmt.Println(err)}
+	if err != nil {	print("stmtInsertUser");err.Error();fmt.Println(err)}
 	stmtGetUser,err = u.Sth(db, "select user_id from sessions as s where s.session_hash = ?")
-	if err != nil {	err.Error();fmt.Println(err)}
+	if err != nil {	print("stmtGetUser");err.Error();fmt.Println(err)}
+	stmtGetUserBySession, err = u.Sth(db, "select users.id, users.email from users, sessions where users.id=sessions.user_id and sessions.session_hash=?")
+	if err != nil {	print("stmtGetUserBySession");err.Error();fmt.Println(err)}
+	stmtSessionExists, err = u.Sth(db, "select user_id from sessions where session_hash=?")
+	if err != nil {	print("stmtSessionExists");err.Error();fmt.Println(err)}
 }
 func init() {
 	c, err := goconfig.ReadConfigFile("config")
@@ -77,7 +82,6 @@ func init() {
 
 // Start the authorization process
 func HandleAuthorize(w http.ResponseWriter, r *http.Request) {
-	print("In handleauth\n")
 	//Get the Google URL which shows the Authentication page to the user
 	url := oauthCfg.AuthCodeURL("")
 
@@ -90,7 +94,6 @@ func HandleOAuth2Callback(w http.ResponseWriter, r *http.Request) {
 	//Get the code from the response
 	code := r.FormValue("code")
 
-	print("code=" + code)
 	t := &oauth.Transport{Config: oauthCfg}
 
 	// Exchange the received code for a token
@@ -123,20 +126,18 @@ func HandleOAuth2Callback(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &f)
 	if err != nil {fmt.Println(err);err.Error();return}
 	m := f.(map[string]interface{})
-	print(m["email"].(string))
 	var authString = u.RandomString(64)
 	email := m["email"].(string)
-	var uid int
+	var us User
 	if ! UserExists(email) {
-		uid, err = AddUser(email)
+		us, err = AddUser(email)
 		if err != nil {fmt.Println(err);err.Error();return }
 	} else {
-		uid, err = GetUser(email)
+		us, err = GetUserByEmail(email)
 		if err != nil {fmt.Println(err);err.Error();return }
 	}
 
-	print("Inserting authstring "+authString+" into DB\n")
-	_, err = stmtCookieIns.Exec(uid, authString)
+	_, err = stmtCookieIns.Exec(us.ID, authString)
 
 	if err != nil {	err.Error();fmt.Println(err);return	}
 	//set the cookie
@@ -145,45 +146,10 @@ func HandleOAuth2Callback(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &cookie)
 	http.Redirect(w, r, "/main", http.StatusFound)
 }
-func UserExists(email string)(exists bool) {
-	var uid int
-	err := stmtGetUserID.QueryRow(email).Scan(&uid)
-	switch {
-		case err == sql.ErrNoRows:
-			exists = false
-		case err != nil:
-			fmt.Println(err);err.Error();exists=false
-		default:
-			exists = true
-	}
-	return exists
-}
-func AddUser(e string)(uid int, err error) {
-	if UserExists(e) {
-		err = stmtGetUserID.QueryRow(e).Scan(&uid)
-		return uid,err
-	}
-	result, err := stmtInsertUser.Exec(e)
-	if err != nil { fmt.Println(err);err.Error();return uid,err}
-    lid, err := result.LastInsertId()
-    uid=int(lid)
-	return uid, err
-}
-func GetUser(e string)(uid int, err error) {
-	if !UserExists(e) {
-		err=errors.New("User Doesn't exist")
-		return 0, err
-	}
-	err = stmtGetUserID.QueryRow(e).Scan(&uid)
-	if err != nil {	fmt.Println(err);err.Error()}
-	return uid, err
-}
 func LoggedIn(w http.ResponseWriter, r *http.Request) (bool, int) {
-	var userId int
 	if environment == "test" {
 		return true, 1
 	}
-	print("cookieName="+cookieName+"\n")
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
 		//just means that the cookie doesn't exist or we couldn't read it
@@ -191,20 +157,15 @@ func LoggedIn(w http.ResponseWriter, r *http.Request) (bool, int) {
 		return false, 0
 	}
 	tokHash := cookie.Value
-	print("tokhash="+tokHash+"\n")
-	err = stmtGetUser.QueryRow(tokHash).Scan(&userId)
-	print("userid="+u.Tostr(userId)+"\n")
-	switch {
-		case err == sql.ErrNoRows:
-			return false,0  //no rows returned
-		case err != nil:                     //probably no results in query
-			fmt.Println(err)
-			err.Error()
-			return false,0
-		default:
-			if userId > 0 {
-				return true, userId
-			}
+	if ! SessionExists(tokHash) {
+		return false, 0
 	}
-	return false, 0
+	us,err := GetUserBySession(tokHash)
+	if err != nil {
+		err.Error();fmt.Println(err);return false,0
+	}
+	if us.ID > 0 {
+		return true,us.ID
+	}
+	return false,0
 }

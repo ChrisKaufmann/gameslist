@@ -5,6 +5,7 @@ import (
 	u "github.com/ChrisKaufmann/goutils"
 	"fmt"
 	"html/template"
+	"github.com/golang/glog"
 )
 
 type Collection struct {
@@ -111,6 +112,17 @@ func (coll Collection) Manuals() (gl []Thing, err error) {
 	stmt, err := u.Sth(db,"select "+thingSelectString+" from things , collection  where collection.user_id=? and collection.thing_id=things.id and things.type='manual'")
 	return getThingsFromSthP(stmt,coll.UserID)
 }
+
+//Misc object functions
+func (coll Collection) Things() (tl []Thing,err error) {
+	stmt, err := u.Sth(db, "select "+thingSelectString+" from things, collection where collection.user_id=? and collection.thing_id=things.id")
+	if err != nil { glog.Errorf("coll.Things sth: %s", err); return}
+	tl,err= getThingsFromSthP(stmt,coll.UserID)
+	if err!= nil {glog.Errorf("coll.Things getThingsFromSthP(stmt,%s): %s", coll.UserID, err)}
+	return tl, err
+}
+
+// helper function
 func (coll Collection) MyThingsFromThings(tl []Thing)(mytl []MyThing) {
 	ml, err := coll.Manuals()
 	if err != nil {err.Error();fmt.Println(err)}
@@ -132,7 +144,12 @@ func (coll Collection) MyThingsFromThings(tl []Thing)(mytl []MyThing) {
 }
 
 //Non Object Functions
-
+func ThingHash(tl []Thing)(h map[int]int) {
+	for _,t := range tl {
+		h[t.ID]=1
+	}
+	return h
+}
 func GetCollection(uid int)(coll Collection, err error) {
 	coll.UserID=uid
 	return coll, err

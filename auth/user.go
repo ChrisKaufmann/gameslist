@@ -1,10 +1,10 @@
 package auth
-//  user.auth
+//  auth/user.go
 
 import (
 	"database/sql"
 	"errors"
-	"fmt"
+	"github.com/golang/glog"
 )
 
 type User struct {
@@ -22,7 +22,8 @@ func UserExists(email string)(exists bool) {
         case err == sql.ErrNoRows:
             exists = false
         case err != nil:
-            fmt.Println(err);err.Error();exists=false
+			glog.Errorf("UserExists():stmtGetUserID(%s): %s",email,err)
+			exists=false
         default:
             exists = true
     }
@@ -34,7 +35,10 @@ func AddUser(e string)(us User, err error) {
         return us,err
     }
     result, err := stmtInsertUser.Exec(e)
-    if err != nil { print("AddUser("+e+"):stmtInsertUser");fmt.Println(err);err.Error();return us,err}
+    if err != nil {
+		glog.Errorf("AddUser(%s): %s", e, err)
+		return us,err
+	}
     lid, err := result.LastInsertId()
     us.ID=int(lid)
 	us.Email=e
@@ -43,10 +47,13 @@ func AddUser(e string)(us User, err error) {
 func GetUserByEmail(e string)(us User, err error) {
     if !UserExists(e) {
         err=errors.New("User Doesn't exist")
+		glog.Errorf("GetUserByEmail(%s): %s",e,err)
         return us, err
     }
     err = stmtGetUserID.QueryRow(e).Scan(&us.ID)
-    if err != nil {print("GetUserByEmail("+e+")stmtGetUserID");fmt.Println(err);err.Error()}
+    if err != nil {
+		glog.Errorf("GetUserByEmail()stmtGetUserID(%s): %s",e,err)
+	}
 	us.Email=e
     return us, err
 }
@@ -59,7 +66,8 @@ func GetUserBySession(s string)(us User, err error) {
 			err = errors.New("No valid session")
 			return us, err
 		case err != nil:
-			print("GEtUserBySession("+s+")");fmt.Println(err);err.Error();return us,err
+			glog.Errorf("GetUserBySession():stmtGetUserBySession(%s): %s",s,err)
+			return us,err
 	}
 	return us,err
 }
@@ -72,7 +80,8 @@ func SessionExists(s string)(e bool) {
 		case err == sql.ErrNoRows:
 			return false
 		case err != nil:
-			print("SessionExists("+s+");stmtSessionExists;");fmt.Println(err);err.Error();return false
+			glog.Errorf("SessionExists():stmtSessionExists(%s): %s",s,err)
+			return false
 		default:
 			return true
 	}

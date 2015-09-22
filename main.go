@@ -362,7 +362,6 @@ func handleConsole(w http.ResponseWriter, r *http.Request) {
 }
 func handleMyCollection(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
-	print("handleMyCollection")
 	loggedin, userID := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)

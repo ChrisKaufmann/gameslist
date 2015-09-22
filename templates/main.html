@@ -7,7 +7,15 @@
 </head>
 <body onload='javascript:show("collection","owned")'>
 <div id="top_menu" class="top_menu_container">
-	<div id="mycoll" class="top_menu" onclick='javascript:show("collection","owned")'><h2>Home</h2></div>
+	<div id="home-header" class="top_menu">
+		<div id="mycoll" class="top_menu" onclick='javascript:show("collection","owned")'><h2>Home</h2></div>
+		<div id="search" style="width:100%;float:left">
+			<form name='search' style="align:bottom">
+				<input type='text' name='search' placeholder='Search'>
+				<input type='button' value='search' onclick='search(this.form')>
+			</form>
+		</div>
+	</div>
 	<div id="games-header" class="top_menu">
 		<div id="games-subset">
 			<div id="games-mygames" onclick='javascript:show("games","owned")'><p class="fonts">MyGames</p></div>
@@ -18,17 +26,11 @@
 		<div id="consoles-subset"><p class="subfonts">My Consoles</p></div>
 	</div>
 	<div id="logout" class="top_menu"><a href="/logout">Logout</a></div>
+</div>
 <div id='content'  style="width:100%;float:left;">
 	<div class="raw_list" style="width:30%;padding:10px;float:left" id="content_div">&nbsp;</div>
 	<div class="raw_list" style="width:30%;padding:10px;float:left" id="secondary_div">&nbsp;</div>
 </div>
-<div id="search" style="width:100%;float:left">
-	<form name='search' style="align:bottom">
-		<input type='text' name='search' placeholder='Search'>
-		<input type='button' value='search' onclick='search(this.form')>
-	</form>
-</div>
-</table>
 </body>
 </html>
 

@@ -6,6 +6,7 @@ import (
 	"strings"
 	u "github.com/ChrisKaufmann/goutils"
 	"errors"
+	"github.com/golang/glog"
 	"database/sql"
 	"github.com/ChrisKaufmann/easymemcache"
 )
@@ -17,8 +18,8 @@ type Thing struct {
 	ParentID	int		//if it's a manual, the game/console it's a manual for, for example
 	Type		string	//console,game,manual,box
 }
-
 var (
+	usemc			bool
 	stmtAddThing	*sql.Stmt
 	stmtGetThing	*sql.Stmt
 	stmtSaveThing	*sql.Stmt
@@ -37,35 +38,39 @@ func DB(d *sql.DB){
 	db=d
 	var err error
 	stmtSaveThing,err =u.Sth(db,"update things set name=?, type=?, parent_id=? where id=? limit 1")
-	if err != nil {err.Error();fmt.Println(err)}
+	if err != nil {glog.Fatalf("stmtSaveThing-u.Sth(db,'update things set name=?, type=?, parent_id=? where id=? limit 1'):%s",err)}
 	stmtDeleteThing,err = u.Sth(db, "delete from things where id=? limit 1")
-	if err != nil {err.Error();fmt.Println(err)}
+	if err != nil {glog.Fatalf("stmtDeleteThing-u.St(db,'delete from things where id=? limit 1'): %s", err)}
 	stmtGetGames, err = u.Sth(db, "select things.id,IFNULL(things.name,''),IFNULL(things.parent_id,''),things.type from things where type='game' and parent_id=? order by things.name ASC")
-	if err != nil {err.Error();fmt.Println(err)}
+	if err != nil {glog.Fatalf("stmtGetGames-u.Sth(db'select things.id,IFNULL(things.name,''),IFNULL(things.parent_id,''),things.type from things where type='game' and parent_id=? order by things.name ASC'):%s", err)}
 	stmtGetBox, err = u.Sth(db, "select "+thingSelectString+" from things where type='box' and parent_id=?")
-	if err != nil {err.Error();fmt.Println(err)}
+	if err != nil {glog.Fatalf("stmtGetBox-u.Sth(db,'select "+thingSelectString+" from things where type='box' and parent_id=?): %s", err)}
 	stmtGetManual, err = u.Sth(db, "select "+thingSelectString+" from things where type='manual' and parent_id=?")
-	if err != nil {err.Error();fmt.Println(err)}
+	if err != nil {glog.Fatalf("stmtGetManual-u.Sth(db,'select "+thingSelectString+" from things where type='manual' and parent_id=?'): %s", err)}
 	stmtAddThing,err = u.Sth(db, "insert into things (name,type) values (?,?)")
-	if err != nil {err.Error();fmt.Println(err)}
+	if err != nil {glog.Fatalf("stmtAddThing-u.Sth(db,'insert into things (name,type) values (?,?)'): %s", err)}
 	stmtGetAllConsoles, err = u.Sth(db, "select "+thingSelectString+" from things where type='console' order by things.name ASC")
-	if err != nil {err.Error();fmt.Println(err)}
+	if err != nil {glog.Fatalf("stmtGetAllConsoles-u.Sth(db,'select "+thingSelectString+" from things where type='console' order by things.name ASC", err)}
 	stmtGetAllGames, err = u.Sth(db, "select "+thingSelectString+" from things where type='game' order by things.name ASC")
-	if err != nil {err.Error();fmt.Println(err)}
+	if err != nil {glog.Fatalf("stmtGetAllGames-u.Sth(db,'select "+thingSelectString+" from things where type='game' order by things.name ASC'): %s", err)}
 	stmtGetThing,err = u.Sth(db,"select "+thingSelectString+" from things where id= ?")
-	if err != nil {err.Error();fmt.Println(err)}
+	if err != nil {glog.Fatalf("stmtGetThing-u.Sth(db,'select "+thingSelectString+" from things where id= ?'): %s", err) }
 	stmtGetAllThings,err = u.Sth(db,"select "+thingSelectString+" from things where 1")
-	if err != nil {err.Error();fmt.Println(err)}
+	if err != nil {glog.Fatalf("stmtGetAllThings-u.Sth(db,'select "+thingSelectString+" from things where 1'): %s", err) }
 	stmtHaveThing, err = u.Sth(db,"select count(*) from collection where thing_id=? and user_id=?")
-	if err != nil {err.Error();fmt.Println(err)}
+	if err != nil {glog.Fatalf("stmtHaveThing-u.Sth(db,'select count(*) from collection where thing_id=? and user_id=?'): %s", err) }
 }
 func MemCache(nmc *easymemcache.Client) () {
 	mc=nmc
+	usemc=true
 }
 
 // object functions
+func (t Thing)String() string {
+	return fmt.Sprintf("ID: %s,Name: %s, Type: %s, ParentID: %s", t.ID, t.Name,t.Type,t.ParentID)
+}
 func (t Thing)Print() {
-	print("ID:\t"+u.Tostr(t.ID)+"\nName:\t"+t.Name+"\nType:\t"+u.Tostr(t.Type)+"\nParentID: "+u.Tostr(t.ParentID)+"\n")
+	fmt.Println(t)
 }
 func (t Thing)Save() (err error){
 	if t.ID < 1 || t.ID != int(t.ID){
@@ -73,12 +78,12 @@ func (t Thing)Save() (err error){
 		return err
 	}
 	if t.Type == "" {
+		glog.Error("thing.Save-No type in thing")
 		err=errors.New("no type in thing")
-		fmt.Println(err)
-		err.Error()
 		return err
 	}
 	_,err = stmtSaveThing.Exec(t.Name,t.Type,t.ParentID,t.ID)
+	if err != nil {glog.Errorf("thing.Save()-stmtSaveThing.Exec(%s,%s,%s,%s): %s",t.Name,t.Type,t.ParentID,t.ID, err) }
 	return err
 }
 func (t Thing)Delete() (err error) {
@@ -87,6 +92,7 @@ func (t Thing)Delete() (err error) {
         return err
     }
 	_, err = stmtDeleteThing.Exec(t.ID)
+	if err != nil {glog.Errorf("thing.Delete()-stmtDeleteThing.Exec(%s): %s",t.ID,err)}
 	return err
 }
 func (t Thing)Games() (tl []Thing, err error) {
@@ -97,10 +103,10 @@ func (t Thing)Box() (nt Thing) {
 	tl,_ := getThingsFromSthP(stmtGetBox, t.ID)
 	if len(tl) < 1 {
 		nt, err := AddThing(t.Name + " Box", "box")
-		if err != nil {err.Error();fmt.Println(err);return nt}
+		if err != nil {glog.Errorf("Box()-AddThing(%s Box, 'box'): %s",t.Name,err);return nt }
 		nt.ParentID=t.ID
 		err =  nt.Save()
-		if err != nil {err.Error();fmt.Println(err);return nt}
+		if err != nil {glog.Errorf("Box()-Save():%s",err)}
 		return nt
 	}
 	return tl[0]
@@ -109,36 +115,48 @@ func (t Thing)Manual() (nt Thing) {
 	tl, _ := getThingsFromSthP(stmtGetManual, t.ID)
 	if len(tl) < 1 {
 		nt, err := AddThing(t.Name +" Manual", "manual")
-		if err != nil {err.Error();fmt.Println(err);return nt}
+		if err != nil {glog.Errorf("thing.Manual()-AddThing(%s Manual,manual):%s",t.Name,err);return nt}
 		nt.ParentID=t.ID
 		err =  nt.Save()
-		if err != nil {err.Error();fmt.Println(err);return nt}
+		if err != nil {glog.Errorf("thing.Manual()-Save(): %s", err)}
 		return nt
 	}
 	return tl[0]
 }
 func (console Thing)AddGame(n string)(nt Thing, err error) {
 	nt,err = AddThing(n, "game")
-	if err != nil {err.Error();fmt.Println(err);return nt, err}
+	if err != nil {glog.Errorf("AddGame: AddThing(%s,'game'):%s",n,err);return nt, err}
 	nt.ParentID=console.ID
 	err = nt.Save()
-	if err != nil {err.Error();fmt.Println(err)}
-	mc.DeleteLike("games_")
+	if err != nil {glog.Errorf("AddGame: nt.Save(): %s", err);}
+	if usemc {	mc.DeleteLike("games_") }
 	return nt, err
 }
 //non object functions down here
+func Search(ss string) (tl []Thing, err error) {
+	stmtSearch, err := u.Sth(db, "select "+thingSelectString+" from things where name like '%"+ss+"%' and type in('game','console');")
+	if err != nil {glog.Errorf("stmtSearch.sth (select "+thingSelectString+" from things where name like '%?%') %s", err) ;return tl, err}
+	tl, err = getThingsFromSth(stmtSearch)
+	if err != nil {glog.Errorf("Search(%s): getThingsFromSthP(stmtSearch,%s): %s", ss,ss,err) }
+	return tl, err
+}
 func GetGame(id int) (t Thing, err error) {
-	return GetThing(id)
+	t,err = GetThing(id)
+	if err != nil {glog.Errorf("GetGame(%s)-GetThing(%s): %s",id,id,err)}
+	return t,err
 }
 func GetAllThings() (tl []Thing, err error) {
 	tl, err = getThingsFromSth(stmtGetAllThings)
+	if err != nil {glog.Errorf("GetAllThings()-getThingsFromSth(stmtGetAllThings): %s", err)}
     return tl,err
 }
 func AddThing(n string, ty string) (t Thing, err error) {
 	t.Name = n
 	t.Type = ty
     result, err := stmtAddThing.Exec(t.Name,t.Type)
+	if err != nil {glog.Errorf("AddThing(%s,%s)-stmtAddThing.Exec(%s,%s): %s",n,ty,t.Name,t.Type,err)}
 	lid, err := result.LastInsertId()
+	if err != nil {glog.Errorf("AddThing(%s,%s)-result.LastInsertId(): %s",n,ty,err)}
 	t.ID=int(lid)
 	return t,err
 }
@@ -146,7 +164,10 @@ func getThingsFromSthPP(stmt *sql.Stmt,ip interface{},pp interface{}) (tl []Thin
 	param := u.Tostr(ip)
 	param2 := u.Tostr(pp)
 	rows, err := stmt.Query(param,param2)
-	if err != nil {err.Error();fmt.Println(err);return tl,err}
+	if err != nil {
+		glog.Error("getThingsFromSthPP: stmt.query(%s,%s): %s",param,param2,err)
+		return tl, err
+	}
 	for rows.Next() {
 		var t Thing
 		rows.Scan(&t.ID, &t.Name, &t.ParentID, &t.Type)
@@ -157,7 +178,10 @@ func getThingsFromSthPP(stmt *sql.Stmt,ip interface{},pp interface{}) (tl []Thin
 func getThingsFromSthP(stmt *sql.Stmt,ip interface{}) (tl []Thing, err error) {
 	param := u.Tostr(ip)
 	rows, err := stmt.Query(param)
-	if err != nil {err.Error();fmt.Println(err);return tl,err}
+	if err != nil {
+		glog.Errorf("getThingsFromSthP(%s): %s", param, err)
+		return tl, err
+	}
 	for rows.Next() {
 		var t Thing
 		rows.Scan(&t.ID, &t.Name, &t.ParentID, &t.Type)
@@ -167,7 +191,10 @@ func getThingsFromSthP(stmt *sql.Stmt,ip interface{}) (tl []Thing, err error) {
 }
 func getThingsFromSth(stmt *sql.Stmt) (tl []Thing, err error) {
 	rows, err := stmt.Query()
-	if err != nil {err.Error();fmt.Println(err);return tl,err}
+	if err != nil {
+		glog.Errorf("getThingsFromSth(): %s", err)
+		return tl, err
+	}
 	for rows.Next() {
 		var t Thing
 		rows.Scan(&t.ID, &t.Name, &t.ParentID, &t.Type)
@@ -177,9 +204,11 @@ func getThingsFromSth(stmt *sql.Stmt) (tl []Thing, err error) {
 }
 func getThingsByParam(p string) (tl []Thing, err error) {
 	query := "select "+thingSelectString+" from things where "+p
-//	print("query="+query+"\n")
 	stmt, err  := u.Sth(db,query)
-	return getThingsFromSth(stmt)
+	if err != nil {glog.Errorf("getThingsByParam-u.Sth(db,%s): %s", query, err) }
+	tl, err = getThingsFromSth(stmt)
+	if err != nil {glog.Errorf("getThingsByParam-getThingsFromSth(stmt): %s", err) }
+	return tl, err
 }
 func GetThings(idls []int) (tl []Thing, err error) {
 	var idl []string
@@ -187,7 +216,10 @@ func GetThings(idls []int) (tl []Thing, err error) {
 		idl = append(idl,u.Tostr(i))
 	}
 	stmtGet, err := u.Sth(db,"select "+thingSelectString+" from things where id in ("+ strings.Join(idl, ",") +")")
-	return getThingsFromSth(stmtGet)
+	if err != nil {glog.Errorf("GetThings-stmtGet-u.Sth('select "+thingSelectString+" from things where id in ("+ strings.Join(idl, ",") +"): %s", err) }
+	tl, err = getThingsFromSth(stmtGet)
+	if err != nil {glog.Errorf("getThingsFromSth(stmtGet): %s", err)}
+	return tl, err
 }
 func GetThing(id interface{})(t Thing, err error) {
 	id=u.Tostr(id)
@@ -195,7 +227,10 @@ func GetThing(id interface{})(t Thing, err error) {
 		return t,err
 	}
 	tl,err := getThingsFromSthP(stmtGetThing,id)
-	if err != nil {err.Error();fmt.Println(err);return t,err}
+	if err != nil {
+		glog.Errorf("GetThing:getThingsFromSthP(stmtGetThing,%s): %s", id, err)
+		return t, err
+	}
 	if len(tl) > 0 {
 		t = tl[0]
 	}
@@ -203,9 +238,11 @@ func GetThing(id interface{})(t Thing, err error) {
 }
 func GetAllGames() (gl []Thing, err error) {
 	ag,err := getThingsFromSth(stmtGetAllGames)
+	if err != nil {glog.Errorf("GetAllGames()-getThingsFromSth(stmtGetAllGames): %s", err) }
 	return ag, err
 }
 func GetAllConsoles() (cl []Thing, err error) {
 	ac, err := getThingsFromSth(stmtGetAllConsoles)
+	if err != nil {glog.Errorf("GetAllConsoles()-getThingsFromSth(stmtGetAllConsoles): %s",err) }
 	return ac, err
 }

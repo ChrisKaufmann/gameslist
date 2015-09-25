@@ -5,6 +5,7 @@ import (
 	u "github.com/ChrisKaufmann/goutils"
 	"fmt"
 	"html/template"
+	"github.com/golang/glog"
 )
 
 type Collection struct {
@@ -52,35 +53,33 @@ func (coll Collection) Delete(t Thing) (err error) {
 	return err
 }
 // Console stuff
-func (coll Collection) Consoles() (mytl []MyThing, err error) {
+func (coll Collection) Consoles() (tl []Thing, err error) {
 	stmt, err := u.Sth(db,"select "+thingSelectString+" from things , collection  where collection.user_id=? and collection.thing_id=things.id and things.type='console' order by things.name ASC")
-	tl, err := getThingsFromSthP(stmt,coll.UserID)
-	return coll.MyThingsFromThings(tl), err
+	tl, err = getThingsFromSthP(stmt,coll.UserID)
+	return tl, err
 }
-func (coll Collection) MissingConsoles() (mytl []MyThing, err error) {
+func (coll Collection) MissingConsoles() (ml []Thing, err error) {
 	ac, err := GetAllConsoles()
-	if err != nil {return mytl, err}
+	if err != nil {return ml, err}
 	mc, err := coll.Consoles()
-	if err != nil {return mytl, err}
+	if err != nil {return ml, err}
 	mcc := make(map[int]int)
 	for _,c := range mc {
 		mcc[c.ID]=1
 	}
-	var ml []Thing
 	for _,c := range ac {
 		if _,ok := mcc[c.ID]; !ok {
 			ml = append(ml, c)
 		}
 	}
-	mytl=coll.MyThingsFromThings(ml)
-	return mytl, err
+	return ml, err
 }
-func (coll Collection) ConsoleGames(c Thing) ([]MyThing, error) {
+func (coll Collection) ConsoleGames(c Thing) ([]Thing, error) {
 	stmt, err := u.Sth(db, "select "+thingSelectString+" from things , collection  where collection.user_id=? and collection.thing_id=things.id and things.type='game' and things.parent_id=? order by things.name ASC")
 	gl, err := getThingsFromSthPP(stmt,coll.UserID,c.ID)
-	return coll.MyThingsFromThings(gl), err
+	return gl, err
 }
-func (coll Collection) OrphanGames() (mtl []MyThing,err error) {
+func (coll Collection) OrphanGames() (mtl []Thing,err error) {
 	gl, err := coll.Games()
 	if err != nil {return mtl, err}
 	cl, err := coll.Consoles()
@@ -97,10 +96,10 @@ func (coll Collection) OrphanGames() (mtl []MyThing,err error) {
 	return mtl, err
 }
 // Game stuff
-func (coll Collection) Games() ( []MyThing, error) {
+func (coll Collection) Games() ( []Thing, error) {
 	stmt, err := u.Sth(db,"select "+thingSelectString+" from things , collection  where collection.user_id=? and collection.thing_id=things.id and things.type='game'")
 	tl, err := getThingsFromSthP(stmt,coll.UserID)
-	return coll.MyThingsFromThings(tl), err
+	return tl,err
 }
 
 func (coll Collection) Boxes() (gl []Thing, err error) {
@@ -111,6 +110,22 @@ func (coll Collection) Manuals() (gl []Thing, err error) {
 	stmt, err := u.Sth(db,"select "+thingSelectString+" from things , collection  where collection.user_id=? and collection.thing_id=things.id and things.type='manual'")
 	return getThingsFromSthP(stmt,coll.UserID)
 }
+
+//Misc object functions
+func (coll Collection) Things() (tl []Thing,err error) {
+	stmt, err := u.Sth(db, "select "+thingSelectString+" from things, collection where collection.user_id=? and collection.thing_id=things.id")
+	if err != nil { glog.Errorf("coll.Things sth: %s", err); return}
+	tl,err= getThingsFromSthP(stmt,coll.UserID)
+	if err!= nil {glog.Errorf("coll.Things getThingsFromSthP(stmt,%s): %s", coll.UserID, err)}
+	return tl, err
+}
+func (coll Collection) MyThingsHash() (map[int]bool) {
+	ml, err := coll.Things()
+	if err != nil {glog.Errorf("coll.MyThingsHash()-Things(): %s", err) }
+	return ThingHash(ml)
+}
+
+// helper function
 func (coll Collection) MyThingsFromThings(tl []Thing)(mytl []MyThing) {
 	ml, err := coll.Manuals()
 	if err != nil {err.Error();fmt.Println(err)}
@@ -132,7 +147,13 @@ func (coll Collection) MyThingsFromThings(tl []Thing)(mytl []MyThing) {
 }
 
 //Non Object Functions
-
+func ThingHash(tl []Thing)(map[int]bool) {
+	h := make(map[int]bool)
+	for _,t := range tl {
+		h[t.ID]=true
+	}
+	return h
+}
 func GetCollection(uid int)(coll Collection, err error) {
 	coll.UserID=uid
 	return coll, err

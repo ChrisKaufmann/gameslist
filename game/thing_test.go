@@ -83,11 +83,11 @@ func TestThing(t *testing.T) {
 	err = m1.Save();if err!=nil {t.Errorf("m1.Save()", err)}
 //Get a manual that was already added, from a game
 	print("\tGetManual(game.Manual()\n")
-	m2, err := g4.Manual();if err!=nil {t.Errorf("g4.Manual()", err)}
+	m2 := g4.Manual();if err!=nil {t.Errorf("g4.Manual()", err)}
 	if m2.Type != "manual" {t.Errorf("m2.Manual, expected 'manual, got: "+m2.Type, err)}
 //Get a manual that shouldn't exist
 	print("\tGetManual(game.manual()- not pre-existing)\n")
-	m3,err := g1.Manual();if err!=nil {t.Errorf("g1.Manual", err)}
+	m3 := g1.Manual();if err!=nil {t.Errorf("g1.Manual", err)}
 	if m3.ParentID != g1.ID {t.Errorf("m3.ParentID, Expected:"+u.Tostr(g1.ID)+", Got:"+u.Tostr(m3.ParentID)+"\n", err)}
 //add a box 
 	print("\tAdd Box\n")
@@ -96,12 +96,27 @@ func TestThing(t *testing.T) {
 	err = b1.Save();if err!=nil {t.Errorf("b1.Save()", err)}
 //Get a manual that was already added, from a game
 	print("\tGetBox(game.Box()\n")
-	b2, err := g4.Box();if err!=nil {t.Errorf("g4.Box()", err)}
+	b2 := g4.Box();if err!=nil {t.Errorf("g4.Box()", err)}
 	if b2.Type != "box" {t.Errorf("m2.Box, expected 'box, got: "+b2.Type, err)}
 //Get a manual that shouldn't exist
 	print("\tGetBox(game.box()- not pre-existing)\n")
-	b3,err := g1.Box();if err!=nil {t.Errorf("g1.Box", err)}
+	b3 := g1.Box();if err!=nil {t.Errorf("g1.Box", err)}
 	if b3.ParentID != g1.ID {t.Errorf("b3.ParentID, Expected:"+u.Tostr(g1.ID)+", Got:"+u.Tostr(b3.ParentID)+"\n", err)}
+//Add a game, specifically
+	print("\tAddGame()\n")
+	g1count,err := c1.Games()
+	if err != nil {t.Errorf("c1.Games()")}
+	_, err = c1.AddGame("TestAddGame")
+	if err != nil {t.Errorf("c1.AddGame()")}
+	g2count,err := c1.Games()
+	if len(g2count) != (len(g1count)+1) {t.Errorf("Len of g1.Games() is wrong") }
+//Search
+	print("\tSearch()\n")
+	_,err = c1.AddGame("gametotestsearching")
+	if err != nil {t.Errorf("c1.AddGame('gametotestsearching')")}
+	sl,err := Search("metotestsearchi")
+	if len(sl) !=  1{t.Errorf("Len of Search() too short, expected 1 got" +u.Tostr(len(sl))+"\n") }
+
 
 }
 func vl(t *testing.T,s string, e interface{}, a interface{}) {

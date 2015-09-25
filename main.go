@@ -31,6 +31,9 @@ var (
 	ConsoleLinkListEntry = template.Must(template.ParseFiles("templates/console_link_list_entry.html"))
 	AddConsoleHTML       = template.Must(template.ParseFiles("templates/add_console.html"))
 	AddGameHTML          = template.Must(template.ParseFiles("templates/add_game.html"))
+	ConsoleOnlyEntryHTML = template.Must(template.ParseFiles("templates/console_only_entry.html"))
+	TableEntryGameHTML   = template.Must(template.ParseFiles("templates/table_entry_game.html"))
+	TableEntryConsoleHTML   = template.Must(template.ParseFiles("templates/table_entry_console.html"))
 )
 
 func init() {
@@ -86,6 +89,7 @@ func main() {
 	http.HandleFunc("/console/", handleConsole)
 	http.HandleFunc("/thing/", handleThing)
 	http.HandleFunc("/mycollection", handleMyCollection)
+	http.HandleFunc("/search/", handleSearch)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	http.HandleFunc("/", handleRoot)
 	print("Listening on port " + port + "\n")
@@ -182,15 +186,14 @@ func handleConsoleList(w http.ResponseWriter, r *http.Request) {
 		glog.Errorf("handleConsoleList()game.GetCollection(%s): %s",userID,err)
 		return
 	}
-	var cons []game.MyThing
+	var cons []game.Thing
 	switch r.FormValue("filter") {
 	case "all":
-		tc, err := game.GetAllConsoles()
+		cons, err = game.GetAllConsoles()
 		if err != nil {
 			glog.Errorf("handleConsoleList().game.GetAllConsoles(): %s", err)
 			return
 		}
-		cons = coll.MyThingsFromThings(tc)
 	case "missing":
 		cons, err = coll.MissingConsoles()
 		if err != nil {
@@ -205,18 +208,10 @@ func handleConsoleList(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	fmt.Fprintf(w, "<table>")
-	for _, c := range cons {
-		p := game.PrintMyThing{c, "white", "white", "white"}
-		if coll.Have(p.Thing) {
-			p.Background = "#aaffa5"
-		}
-		if coll.Have(p.Thing.Box()) {
-			p.BoxBackground = "#aaffa5"
-		}
-		if coll.Have(p.Thing.Manual()) {
-			p.ManualBackground = "#aaffa5"
-		}
-		ListEntryHtml.Execute(w, p)
+
+	ptl := game.GetPrintableThings(cons,coll.MyThingsHash())
+	for _, c := range ptl {
+		ListEntryHtml.Execute(w, c)
 	}
 	fmt.Fprintf(w, "<tr><td colspan=3>")
 	AddConsoleHTML.Execute(w, nil)
@@ -236,18 +231,22 @@ func handleGameList(w http.ResponseWriter, r *http.Request) {
 		glog.Errorf("handleGameList.game.GetCollection(%s): %s",userID,err)
 		return
 	}
-	var gl []game.MyThing
-	mytem := ListEntryHtml
+	var gl []game.Thing
 	switch r.FormValue("filter") {
 	case "all":
 		AddGameHTML.Execute(w, coll)
-		mytem = ConsoleLinkListEntry
-		tl, err := game.GetAllConsoles()
+		//mytem = ConsoleLinkListEntry
+		gl, err = game.GetAllConsoles()
 		if err != nil {
 			glog.Errorf("handleGameList.game.GetAllConsoles(): %s", err)
 			return
 		}
-		gl = coll.MyThingsFromThings(tl)
+		fmt.Fprintf(w,"<table>")
+		for _,c := range gl {
+			ConsoleLinkListEntry.Execute(w,c)
+		}
+		fmt.Fprintf(w,"</table>")
+		return
 	case "console":
 		cid := r.FormValue("console_id")
 		if cid == "" {
@@ -258,12 +257,11 @@ func handleGameList(w http.ResponseWriter, r *http.Request) {
 			glog.Errorf("handleGameList.game.GetThing(%s): %s", cid, err)
 			return
 		}
-		tl, err := con.Games()
+		gl, err = con.Games()
 		if err != nil {
 			glog.Errorf("handleGameList.con.Games(): %s", err)
 			return
 		}
-		gl = coll.MyThingsFromThings(tl)
 	case "missing":
 		return
 	default:
@@ -275,26 +273,13 @@ func handleGameList(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Printf("handleGameList, before execute loop %v\n", time.Now().Sub(t0))
 	fmt.Fprintf(w, "<table>")
-	for _, g := range gl {
-		p := game.PrintMyThing{g, "white", "white", "white"}
-		if coll.Have(p.Thing) {
-			p.Background = "#aaffa5"
-		}
-		if coll.Have(p.Thing.Box()) {
-			p.BoxBackground = "#aaffa5"
-		}
-		if coll.Have(p.Thing.Manual()) {
-			p.ManualBackground = "#aaffa5"
-		}
-		mytem.Execute(w, &p)
-	}
+	PrintListOfThings(w,coll,gl)
 	fmt.Fprintf(w, "</table>")
 	fmt.Printf("handleGameList %v\n", time.Now().Sub(t0))
 }
 func handleCollection(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	print("handleCollection\n")
-	//<url>/collection/<id>/<add/remove>/<console/box/manual/note[?note]>
 	loggedin, userID := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
@@ -309,6 +294,26 @@ func handleCollection(w http.ResponseWriter, r *http.Request) {
 	var thing string
 	u.PathVars(r, "/collection/", &id, &todo, &thing)
 	fmt.Printf("handleCollection %v\n", time.Now().Sub(t0))
+}
+func handleSearch(w http.ResponseWriter, r *http.Request) {
+	t0 := time.Now()
+	print("handleCollection\n")
+	loggedin,userID := auth.LoggedIn(w, r)
+	if !loggedin {
+		http.Redirect(w, r, "/", http.StatusFound)
+	}
+	coll, err := game.GetCollection(userID)
+	if err != nil {
+		glog.Errorf("handleSearch.game.GetCollection(%s): %s",userID, err)
+		return
+	}
+	ss := r.FormValue("query")
+	tl,err := game.Search(ss)
+	if err != nil { glog.Errorf("game.Search(%s): %s", ss, err) }
+	fmt.Fprintf(w,"<table>\n")
+	PrintListOfThings(w,coll,tl)
+	fmt.Fprintf(w,"</table>\n")
+	fmt.Printf("handleSearch %v\n", time.Now().Sub(t0))
 }
 func handleConsole(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
@@ -357,7 +362,6 @@ func handleConsole(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-
 	fmt.Printf("handleConsole %v\n", time.Now().Sub(t0))
 }
 func handleMyCollection(w http.ResponseWriter, r *http.Request) {
@@ -371,42 +375,21 @@ func handleMyCollection(w http.ResponseWriter, r *http.Request) {
 		glog.Errorf("handleMyCollection.game.GetCollection(%s): %s", userID, err)
 		return
 	}
-	cons, err := coll.Consoles()
-	for _, myc := range cons {
-		pc := game.PrintMyThing{myc, "white", "white", "white"}
-		if coll.Have(pc.Thing.Box()) {
-			pc.BoxBackground = "#aaffa5"
-		}
-		if coll.Have(pc.Thing.Manual()) {
-			pc.ManualBackground = "#aaffa5"
-		}
-		ListEntryHtml.Execute(w, pc)
-		c, err := game.GetThing(myc.ID)
-		gl, err := coll.ConsoleGames(c)
-		if err != nil {
-			glog.Errorf("handleMyCollection.coll.ConsoleGames: %s", err)
-			return
-		}
-		fmt.Fprintf(w, "</ul>")
-		for _, g := range gl {
-			pg := game.PrintMyThing{g, "white", "white", "white"}
-			pg.Name = "----------" + pg.Name
-			if coll.Have(pg.Thing.Box()) {
-				pg.BoxBackground = "#aaffa5"
-			}
-			if coll.Have(pg.Thing.Manual()) {
-				pg.ManualBackground = "#aaffa5"
-			}
-			ListEntryHtml.Execute(w, pg)
-		}
-		fmt.Fprintf(w, "</ul>")
-	}
-	orphans, err := coll.OrphanGames()
-	if err != nil {
-		glog.Errorf("handleMyCollection.coll.OrphanGames(): %s", err)
-	}
-	for _, myg := range orphans {
-		ListEntryHtml.Execute(w, myg)
-	}
+	cl, err := coll.Things()
+	if err != nil { glog.Errorf("handleMyCollection()coll.MyThings(): %s", err);return }
+	PrintListOfThings(w,coll,cl)
 	fmt.Printf("handleMyCollection %v\n", time.Now().Sub(t0))
+}
+func PrintListOfThings(w http.ResponseWriter,coll game.Collection,tl []game.Thing) {
+	mtl := coll.MyThingsHash()
+	cons, err := game.GetAllConsoles()
+	if err != nil {glog.Errorf("PrintListOfThings-game.GetAllConsoles(): %s", err) ;return}
+	for _, myc := range game.GetPrintableThings(cons, mtl) {
+		TableEntryConsoleHTML.Execute(w,myc)
+		for _, t := range game.GetPrintableThings(tl, mtl) {
+			if t.ParentID == myc.ID {
+				TableEntryGameHTML.Execute(w,t)
+			}
+		}
+	}
 }

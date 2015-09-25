@@ -5,27 +5,12 @@ console.log("show("+thingtoshow+","+filter+")")
 		type: "GET",
 		url: '/list/'+thingtoshow+'?filter='+filter, 
 		success:function(html){
-/*			if(thingtoshow != 'collection') {
-				$.ajax({
-					type:"GET",
-					url:'/toggle/'+thingtoshow,
-					success:function(togglehtml){
-						$('#toggle_container').html(togglehtml);
-						$('#toggle_consoles').css("text-decoration", "none")
-						$('#toggle_games').css("text-decoration", "none")
-						$('#toggle_'+filter).css("text-decoration", "underline")
-					}
-				});
-			} else {
-				$('#toggle_container').html('');
-			}
-*/
 			$('#content_div').html(html);
 			$('#header-collection').css("text-decoration", "none")
 			$('#header-consoles').css("text-decoration", "none")
 			$('#header-games').css("text-decoration", "none")
 			$('#header-'+thingtoshow).css("text-decoration", "underline")
-    $('#secondary_div').html("")
+    		$('#secondary_div').html("")
 			}
 		})
 }
@@ -36,10 +21,18 @@ function show_games(console_id)
 	$.ajax({
 		type: "GET", url: '/list/games?filter=console&console_id='+console_id,
 		success:function(html){
-			$('#div_thing'+console_id).css("text-decoration","3px solid");
-			$('#secondary_div').html(html)
+			$('#content_div').html(html)
+			$('#console_div_'+console_id).css("text-decoration", "underline")
 		}
 	})
+}
+function searchthings(form)
+{
+	var ss = form.search.value;
+	console.log("search("+ss+")");
+	$.ajax({type: "GET",url: '/search/',data:"query="+ss, success:function(html){
+		$('#content_div').html(html);
+	}})
 }
 function add_console(form)
 {
@@ -62,6 +55,14 @@ function add_game(form)
 		$('#menu_status').html(html);
 		form.add_game_text.value="";
 	}})
+}
+function save_change(form)
+{
+	console.log(form)
+	var t = form.check.value;
+	var b = form.box_check.value;
+	var m = form.manual_check.value;
+	console.logt("t:"+t+",b:"+b+",m:"+m)
 }
 function toggle_owned(id)
 {

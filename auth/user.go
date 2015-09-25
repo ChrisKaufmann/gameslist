@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/golang/glog"
+	"fmt"
 )
 
 type User struct {
@@ -13,6 +14,14 @@ type User struct {
 }
 
 //object functions
+func (us User) String() (string) {
+    return fmt.Sprintf("ID: %s, Email: %s",us.ID,us.Email)
+}
+func (us User) AddSession(sh string) (err error) {
+	_,err = stmtCookieIns.Exec(us.ID, sh)
+	if err != nil {glog.Errorf("user.AddSession(%s)stmtCookieIns(%s,%s):%s",us,us.ID,sh,err) }
+	return err
+}
 
 //Non object functions
 func UserExists(email string)(exists bool) {

@@ -90,6 +90,7 @@ func main() {
 	http.HandleFunc("/thing/", handleThing)
 	http.HandleFunc("/mycollection", handleMyCollection)
 	http.HandleFunc("/search/", handleSearch)
+	http.HandleFunc("/demo", handleDemo)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	http.HandleFunc("/", handleRoot)
 	print("Listening on port " + port + "\n")
@@ -118,6 +119,11 @@ func handleMain(w http.ResponseWriter, r *http.Request) {
 		glog.Errorf("handleMain(): %s", err)
 	}
 	fmt.Printf("handleMain %v\n", time.Now().Sub(t0))
+}
+func handleDemo(w http.ResponseWriter, r *http.Request) {
+	t0 := time.Now()
+	auth.DemoUser(w,r)
+	fmt.Printf("handleDemo %v\n", time.Now().Sub(t0))
 }
 func handleThing(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
@@ -399,7 +405,7 @@ func PrintListOfThings(w http.ResponseWriter,coll game.Collection,tl []game.Thin
 	cons, err := game.GetAllConsoles()
 	if err != nil {glog.Errorf("PrintListOfThings-game.GetAllConsoles(): %s", err) ;return}
 	fmt.Fprintf(w,"<table>")
-	fmt.Fprintf(w,"<tr><td>Console</td><td>&nbsp;</td><td>Game</td><td>?</td><td>Man</td><td>Box</td></tr>")
+	fmt.Fprintf(w,"<tr><td colspan=2>Console</td><td align=right>Game</td><td>?</td><td>Man</td><td>Box</td></tr>")
 	for _, myc := range game.GetPrintableThings(cons, mtl) {
 		TableEntryConsoleHTML.Execute(w,myc)
 		for _, t := range game.GetPrintableThings(tl, mtl) {

@@ -96,12 +96,12 @@ func init() {
 	oauthCfg.RedirectURL = url + "/oauth2callback"
 }
 
-// Start the authorization process
 func HandleLogout(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
 		//just means that the cookie doesn't exist or we couldn't read it
 		glog.Infof("HandleLogout: No cookie to logut %s", err)
+		return
 	}
 	tokHash := cookie.Value
 	if !SessionExists(tokHash) {
@@ -113,12 +113,35 @@ func HandleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Redirect(w, r, "/", http.StatusFound)
 }
+// Start the authorization process
 func HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 	//Get the Google URL which shows the Authentication page to the user
 	url := oauthCfg.AuthCodeURL("")
 
 	//redirect user to that page
 	http.Redirect(w, r, url, http.StatusFound)
+}
+
+//simulate a demo login, create the cookie, make sure the demo user exists, create the session
+func DemoUser(w http.ResponseWriter, r *http.Request) {
+	demo_email := "demo@exmaple.com"
+	var us User
+	var err error
+	if ! UserExists(demo_email) {
+		us,err = AddUser(demo_email)
+		if err != nil { glog.Errorf("DemoUser(w,r)AddUser(%s): %s", demo_email, err);return }
+	} else {
+		us, err = GetUserByEmail(demo_email)
+		if err != nil { glog.Errorf("DemoUser(w,r)GetUserByEmail(%s): %s", demo_email, err);return }
+	}
+	var authString = u.RandomString(64)
+	//set the cookie
+	err = us.AddSession(authString)
+	if err != nil {glog.Errorf("DemoUser(w,r)AddUser(%s): %s", authString, err);return }
+    expire := time.Now().AddDate(1, 0, 0) // year expirey seems reasonable
+	cookie := http.Cookie{Name: cookieName, Value: authString, Expires: expire}
+	http.SetCookie(w, &cookie)
+	http.Redirect(w, r, "/main", http.StatusFound)
 }
 
 // Function that handles the callback from the Google server
@@ -170,7 +193,8 @@ func HandleOAuth2Callback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	_, err = stmtCookieIns.Exec(us.ID, authString)
+//	_, err = stmtCookieIns.Exec(us.ID, authString)
+	err = us.AddSession(authString)
 
 	if err != nil {
 		glog.Errorf("HandleOauth2Callback:stmtCookieIns.Exec(%s,%s): %s", us.ID, authString, err)

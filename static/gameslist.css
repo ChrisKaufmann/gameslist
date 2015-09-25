@@ -1,6 +1,14 @@
 body {
     -webkit-text-size-adjust: 100%;
 }
+#floating_sidebar {
+  position:fixed;
+  right:5px;
+  height: 90%;
+  border: 5px;
+  top: 10px;
+  visibility: hidden;
+}
 div.top_menu_container {
 	width:100%;
 	background-color: #c9dddd;

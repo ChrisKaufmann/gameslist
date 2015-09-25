@@ -8,18 +8,53 @@
 <body onload='javascript:show("collection","owned")'>
 <div id="top_menu" class="top_menu_container">
 	<div id="home-header" class="top_menu">
-		<div id="mycoll" class="top_menu" onclick='javascript:show("collection","owned")'><h2>Home</h2></div>
-		<div id="search" style="width:100%;float:left">
-			<form name='search' style="align:bottom">
-				<input type='text' name='search' placeholder='Search'>
-				<input type='button' value='search' onclick='searchthings(this.form)'>
-			</form>
-		</div>
+		<table width="100%">
+			<tr>
+				<td align="top"><div id="mycoll"><a href='/'><img src='/static/home.jpg' height='20'></a></div></td>
+				<td align="center"><div id="search_div" style="width:100%;float:left">
+					<form name='search_form' id='search_form' style="align:bottom">
+						<input type='text' name='search_text' id='search_text' placeholder='Search'>
+					</form>
+					</div>
+				</td>
+				<td>
+					<div id="logout"><a href="/logout"><img src='/static/logout.png' height='20px'></a></div>
+				</td>
+			</tr>
+		</table>
 	</div>
-	<div id="logout" class="top_menu"><a href="/logout">Logout</a></div>
 </div>
 <div id='content'  style="width:100%;float:left;">
 	<div class="raw_list" style="width:50%;padding:10px;float:left" id="content_div">&nbsp;</div>
+</div>
+<div id='floating_sidebar'>
+<a href="#sym">#</a><br>
+<a href="#a">a</a><br>
+<a href="#b">b</a><br>
+<a href="#c">c</a><br>
+<a href="#d">d</a><br>
+<a href="#e">e</a><br>
+<a href="#f">f</a><br>
+<a href="#g">g</a><br>
+<a href="#h">h</a><br>
+<a href="#i">i</a><br>
+<a href="#j">j</a><br>
+<a href="#k">k</a><br>
+<a href="#l">l</a><br>
+<a href="#m">m</a><br>
+<a href="#n">n</a><br>
+<a href="#o">o</a><br>
+<a href="#p">p</a><br>
+<a href="#q">q</a><br>
+<a href="#r">r</a><br>
+<a href="#s">s</a><br>
+<a href="#t">t</a><br>
+<a href="#u">u</a><br>
+<a href="#v">v</a><br>
+<a href="#w">w</a><br>
+<a href="#x">x</a><br>
+<a href="#y">y</a><br>
+<a href="#z">z</a><br>
 </div>
 </body>
 </html>

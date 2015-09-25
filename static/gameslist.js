@@ -1,3 +1,16 @@
+var searchtimeout;
+$(document).on('input', '#search_text',  function() {
+	clearTimeout(searchtimeout);
+	searchtimeout = setTimeout(function() {
+		var sc = document.getElementById('search_form');
+		var sv = sc.search_text.value;
+		if(sv.length >=2){
+			console.log(sv);
+			searchthings(sv);
+		}
+	}, 1000);
+
+});
 function show(thingtoshow,filter)
 {
 console.log("show("+thingtoshow+","+filter+")")
@@ -11,6 +24,7 @@ console.log("show("+thingtoshow+","+filter+")")
 			$('#header-games').css("text-decoration", "none")
 			$('#header-'+thingtoshow).css("text-decoration", "underline")
     		$('#secondary_div').html("")
+			$('#floating_sidebar').css("visibility", "hidden");
 			}
 		})
 }
@@ -21,17 +35,17 @@ function show_games(console_id)
 	$.ajax({
 		type: "GET", url: '/list/games?filter=console&console_id='+console_id,
 		success:function(html){
-			$('#content_div').html(html)
-			$('#console_div_'+console_id).css("text-decoration", "underline")
+			$('#content_div').html(html);
+			$('#console_div_'+console_id).css("text-decoration", "underline");
+			$('#floating_sidebar').css("visibility", "visible");
 		}
 	})
 }
-function searchthings(form)
+function searchthings(ss)
 {
-	var ss = form.search.value;
-	console.log("search("+ss+")");
 	$.ajax({type: "GET",url: '/search/',data:"query="+ss, success:function(html){
 		$('#content_div').html(html);
+		$('#floating_sidebar').css("visibility", "hidden");
 	}})
 }
 function add_console(form)

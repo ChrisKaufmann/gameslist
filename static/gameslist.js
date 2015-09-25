@@ -1,19 +1,29 @@
 var searchtimeout;
-$(document).on('input', '#search_text',  function() {
+$(document).on('input propertychange paste', '#search_text',  function() {
 	clearTimeout(searchtimeout);
 	searchtimeout = setTimeout(function() {
-		var sc = document.getElementById('search_form');
-		var sv = sc.search_text.value;
+		var sc = document.getElementById('search_text');
+		var sv = search_text.value;
 		if(sv.length >=2){
-			console.log(sv);
 			searchthings(sv);
 		}
 	}, 1000);
-
+});
+$(document).keyup(function (e) {
+	if(e.keyCode == 13) {
+		var sc = document.getElementById('search_text');
+		var sv = search_text.value;
+		searchthings(sv);
+	}
+});
+$("#search_text").keyup(function(e){
+	if(e.keyCode == 13) {
+		console.log("enter");
+		return false;
+	}
 });
 function show(thingtoshow,filter)
 {
-console.log("show("+thingtoshow+","+filter+")")
 	$.ajax({
 		type: "GET",
 		url: '/list/'+thingtoshow+'?filter='+filter, 
@@ -30,7 +40,6 @@ console.log("show("+thingtoshow+","+filter+")")
 }
 function show_games(console_id)
 {
-	console.log("show_games("+console_id+")")
 	$('#secondary_div').html('Loading...');
 	$.ajax({
 		type: "GET", url: '/list/games?filter=console&console_id='+console_id,
@@ -50,7 +59,6 @@ function searchthings(ss)
 }
 function add_console(form)
 {
-	console.log("add_console("+form+")")
 	$('menu_status').innerHTML='Adding...';
 	var newcon =form.add_console_text.value;
 	$.ajax({type: "GET",url: '/console/new/'+newcon,success:function(html){
@@ -63,7 +71,6 @@ function add_game(form)
 	var newgame = form.add_game_text.value;
 	var index=form.add_game_select.selectedIndex;
 	var selvalue=form.add_game_select.options[index].value;
-	console.log("add_game("+form+")")
 	var data="console_id="+selvalue+"&game_name="+newgame
 	$.ajax({type: "POST", url: '/console/newgame', data:data, success:function(html){
 		$('#menu_status').html(html);
@@ -72,7 +79,6 @@ function add_game(form)
 }
 function save_change(id,elem)
 {
-	console.log("id="+id+"elem="+elem);
 	var data="action=have_not";
 	if (document.getElementById(elem).checked)
 	{
@@ -80,12 +86,10 @@ function save_change(id,elem)
 	}
 	$.ajax({type: "POST", url: '/thing/'+id, data:data, success:function(html)
 	{
-		console.log(html);	
 	}})
 }
 function toggle_owned(id)
 {
-	console.log("toggle_owned("+id+")")
 	var data="action=toggle";
 	$.ajax({type: "POST", url: '/thing/'+id, data:data, success:function(html)
 	{

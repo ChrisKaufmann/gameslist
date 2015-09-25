@@ -15,6 +15,8 @@ type PrintableThing struct {
 	HasManual bool
 	Has bool
 	HasBox bool
+	ManualID int
+	BoxID int
 }
 func (t PrintableThing) Background() (string) {
 	if t.Has {return hasbg}
@@ -63,7 +65,7 @@ func GetPrintableThings(tl []Thing, ph map[int]bool) (ptl []PrintableThing) {
 		if t.Type=="box" {tbs[t.ParentID]=t.ID}
 	}
 	for _, t := range tl {
-		pt := PrintableThing{t,false,false,false}
+		pt := PrintableThing{t,false,false,false,tms[t.ID],tbs[t.ID]}
 		if ph[t.ID] {pt.Has = true }
 		if ph[tms[t.ID]] {pt.HasManual = true }
 		if ph[tbs[t.ID]] {pt.HasBox = true }

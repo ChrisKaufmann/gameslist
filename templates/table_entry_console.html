@@ -1,9 +1,9 @@
 <tr>
 	<form name="coll_{{.ID}}">
-	<td><div id='console_div_{{ .ID }}' onclick="show_games('{{.ID}}')"><p class="fonts">{{ .Name }}</p></div></td>
+	<td colspan=2><div id='console_div_{{ .ID }}' onclick="show_games('{{.ID}}')"><p class="fonts">{{ .Name }}</p></div></td>
 	<td></td>
-	<td><input type="checkbox" name="check" {{ .Checked }} onchange='save_change(this.form)'></td>
-	<td><input type="checkbox" name="manual_check" {{ .ManualChecked }} onchange='save_change(this.form)'></td>
-	<td><input type="checkbox" name="box_check" {{ .BoxChecked }} onchange='save_change(this.form)'></td>
+	<td><input type="checkbox" id="checkbox-{{.ID}}" {{ .Checked }} onchange="save_change({{.ID}},'checkbox-{{.ID}}')"></td>
+	<td><input type="checkbox" id="checkbox-manual-{{.ID}}" {{ .ManualChecked }} onchange="save_change('{{.Manual.ID}}','checkbox-manual-{{.ID}}')"></td>
+	<td><input type="checkbox" id="checkbox-box-{{.ID}}" {{ .BoxChecked }} onchange="save_change('{{.Box.ID}}','checkbox-box-{{.ID}}')"></td>
 	</form>
 </tr>

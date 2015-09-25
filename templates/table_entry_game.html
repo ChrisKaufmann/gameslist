@@ -1,9 +1,9 @@
 <tr>
 	<form name="coll_{{.ID}}">
 	<td></td>
-	<td><h3>{{ .Name }}</h3></td>
-	<td><input type="checkbox" name="check" {{ .Checked }}></td>
-	<td><input type="checkbox" name="manual_check" {{ .ManualChecked }}></td>
-	<td><input type="checkbox" name="box_check" {{ .BoxChecked }}></td>
+	<td colspan=2 align='right'><h3>{{ .Name }}</h3></td>
+    <td><input type="checkbox" id="checkbox-{{.ID}}" {{ .Checked }} onchange="save_change({{.ID}},'checkbox-{{.ID}}')"></td>
+    <td><input type="checkbox" id="checkbox-manual-{{.ID}}" {{ .ManualChecked }} onchange="save_change('{{.Manual.ID}}','checkbox-manual-{{.ID}}')"></td>
+    <td><input type="checkbox" id="checkbox-box-{{.ID}}" {{ .BoxChecked }} onchange="save_change('{{.Box.ID}}','checkbox-box-{{.ID}}')"></td>
 	</form>
 </tr>

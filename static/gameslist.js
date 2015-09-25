@@ -56,13 +56,18 @@ function add_game(form)
 		form.add_game_text.value="";
 	}})
 }
-function save_change(form)
+function save_change(id,elem)
 {
-	console.log(form)
-	var t = form.check.value;
-	var b = form.box_check.value;
-	var m = form.manual_check.value;
-	console.logt("t:"+t+",b:"+b+",m:"+m)
+	console.log("id="+id+"elem="+elem);
+	var data="action=have_not";
+	if (document.getElementById(elem).checked)
+	{
+		data="action=have";
+	}
+	$.ajax({type: "POST", url: '/thing/'+id, data:data, success:function(html)
+	{
+		console.log(html);	
+	}})
 }
 function toggle_owned(id)
 {

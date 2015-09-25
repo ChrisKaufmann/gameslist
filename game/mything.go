@@ -29,13 +29,16 @@ func (t PrintableThing) ManualBackground() (string) {
 	return "white"
 }
 func (t PrintableThing) Checked() (string) {
-	if t.Has {return "checked"}else{return ""}
+	if t.Has {return "checked"}
+	return "unchecked"
 }
 func (t PrintableThing) ManualChecked() (string) {
-	if t.HasManual {return "checked"}else{return ""}
+	if t.HasManual {return "checked"}
+	return "unchecked"
 }
 func (t PrintableThing) BoxChecked() (string) {
-	if t.HasBox {return "checked"}else{return ""}
+	if t.HasBox {return "checked"}
+	return "unchecked"
 }
 
 // object functions

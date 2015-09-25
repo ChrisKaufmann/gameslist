@@ -155,6 +155,20 @@ func handleThing(w http.ResponseWriter, r *http.Request) {
 			if err!= nil {glog.Errorf("handleThing()coll.Add(%s): %s",t.ID, err)}
 			fmt.Fprintf(w, "#aaffa5")
 		}
+	case "have":
+		t, err := game.GetThing(id)
+		if err != nil {
+			glog.Errorf("handleThing:game.GetThing(%s): %s", id, err)
+		}
+		err = coll.Add(t)
+		if err != nil {glog.Errorf("handleThing()coll.Add(%s): %s", t.ID, err);return}
+	case "have_not":
+		t, err := game.GetThing(id)
+		err = coll.Delete(t)
+		if err != nil {
+			glog.Errorf("handleThing: coll.Have(%s) (trying to toggle unowned)", t.ID)
+			return
+		}
 	}
 	fmt.Printf("HandleThing %v\n", time.Now().Sub(t0))
 }
@@ -384,6 +398,8 @@ func PrintListOfThings(w http.ResponseWriter,coll game.Collection,tl []game.Thin
 	mtl := coll.MyThingsHash()
 	cons, err := game.GetAllConsoles()
 	if err != nil {glog.Errorf("PrintListOfThings-game.GetAllConsoles(): %s", err) ;return}
+	fmt.Fprintf(w,"<table>")
+	fmt.Fprintf(w,"<tr><td>Console</td><td>&nbsp;</td><td>Game</td><td>?</td><td>Man</td><td>Box</td></tr>")
 	for _, myc := range game.GetPrintableThings(cons, mtl) {
 		TableEntryConsoleHTML.Execute(w,myc)
 		for _, t := range game.GetPrintableThings(tl, mtl) {
@@ -392,4 +408,5 @@ func PrintListOfThings(w http.ResponseWriter,coll game.Collection,tl []game.Thin
 			}
 		}
 	}
+	fmt.Fprintf(w,"</table>")
 }

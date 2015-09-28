@@ -4,6 +4,7 @@ import (
 	"./auth"
 	"./game"
 	"database/sql"
+	"strings"
 	"errors"
 	"fmt"
 	"github.com/ChrisKaufmann/easymemcache"
@@ -118,6 +119,8 @@ func handleMain(w http.ResponseWriter, r *http.Request) {
 	if err := mainHtml.Execute(w, nil); err != nil {
 		glog.Errorf("handleMain(): %s", err)
 	}
+	handleMyCollection(w,r)
+	fmt.Fprintf(w,"  </div>	</div>	</body>	</html>")
 	fmt.Printf("handleMain %v\n", time.Now().Sub(t0))
 }
 func handleDemo(w http.ResponseWriter, r *http.Request) {
@@ -405,10 +408,16 @@ func PrintListOfThings(w http.ResponseWriter,coll game.Collection,tl []game.Thin
 	cons, err := game.GetAllConsoles()
 	if err != nil {glog.Errorf("PrintListOfThings-game.GetAllConsoles(): %s", err) ;return}
 	fmt.Fprintf(w,"<table>")
-	fmt.Fprintf(w,"<tr><td colspan=2>Console</td><td align=right>Game</td><td>?</td><td>Man</td><td>Box</td></tr>")
+	fmt.Fprintf(w,"<tr><td colspan=2><a name='sym'></a>Console</td><td align=right>Game</td><td>?</td><td>Man</td><td>Box</td></tr>")
+	curr := "9"
 	for _, myc := range game.GetPrintableThings(cons, mtl) {
 		TableEntryConsoleHTML.Execute(w,myc)
 		for _, t := range game.GetPrintableThings(tl, mtl) {
+			fc := strings.ToUpper(t.Name[0:1])
+			if fc > curr {
+				fmt.Fprintf(w,"<tr'><td><a name='"+fc+"' id='"+fc+"'></a></td></tr>\n")
+				curr = fc
+			}
 			if t.ParentID == myc.ID {
 				TableEntryGameHTML.Execute(w,t)
 			}

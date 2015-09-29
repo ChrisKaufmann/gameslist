@@ -3,6 +3,7 @@ package main
 import (
 	"./auth"
 	"./game"
+	"flag"
 	"database/sql"
 	"strings"
 	"errors"
@@ -39,6 +40,7 @@ var (
 
 func init() {
 	var err error
+	flag.Parse()
 	c, err := goconfig.ReadConfigFile("config")
 	if port, err = c.GetString("Web", "port"); err != nil {
 		glog.Fatalf("init(): config.GetString(web.portal): %s", err)

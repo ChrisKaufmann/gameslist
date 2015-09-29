@@ -66,7 +66,7 @@ func init() {
 	}
 	db, err = sql.Open("mysql", db_user+":"+db_pass+"@"+db_host+"/"+db_name)
 	if err != nil {
-		glog.Errorf("Init():sql.Open(mysql, %s:%s@%s/%s: %s", db_user, db_pass, db_host, db_name, err)
+		glog.Fatalf("Init():sql.Open(mysql, %s:%s@%s/%s: %s", db_user, db_pass, db_host, db_name, err)
 	}
 	cookieName = "gameslist_auth_" + environment
 	auth.CookieName(cookieName)
@@ -106,9 +106,11 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 	if !loggedin {
 		if err := indexHtml.Execute(w, nil); err != nil {
 			glog.Errorf("HandleRoot(): %s", err)
+			return
 		}
 	} else {
 		http.Redirect(w, r, "/main.html", http.StatusFound)
+		return
 	}
 	fmt.Printf("handleRoot %v\n", time.Now().Sub(t0))
 }
@@ -117,9 +119,11 @@ func handleMain(w http.ResponseWriter, r *http.Request) {
 	loggedin, _ := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
+		return
 	}
 	if err := mainHtml.Execute(w, nil); err != nil {
 		glog.Errorf("handleMain(): %s", err)
+		return
 	}
 	handleMyCollection(w,r)
 	fmt.Fprintf(w,"  </div>	</div>	</body>	</html>")
@@ -135,6 +139,7 @@ func handleThing(w http.ResponseWriter, r *http.Request) {
 	loggedin, userID := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
+		return
 	}
 	var id string
 	u.PathVars(r, "/thing/", &id)
@@ -147,12 +152,14 @@ func handleThing(w http.ResponseWriter, r *http.Request) {
 	coll, err := game.GetCollection(userID)
 	if err != nil {
 		glog.Errorf("handleThing();game.GetCollection(%s): %s", userID, err)
+		return
 	}
 	switch action {
 	case "toggle":
 		t, err := game.GetThing(id)
 		if err != nil {
 			glog.Errorf("handleThing:game.GetThing(%s): %s", id, err)
+			return
 		}
 		if coll.Have(t) {
 			err = coll.Delete(t)
@@ -163,13 +170,14 @@ func handleThing(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "white")
 		} else {
 			err =coll.Add(t)
-			if err!= nil {glog.Errorf("handleThing()coll.Add(%s): %s",t.ID, err)}
+			if err!= nil {glog.Errorf("handleThing()coll.Add(%s): %s",t.ID, err);return}
 			fmt.Fprintf(w, "#aaffa5")
 		}
 	case "have":
 		t, err := game.GetThing(id)
 		if err != nil {
 			glog.Errorf("handleThing:game.GetThing(%s): %s", id, err)
+			return
 		}
 		err = coll.Add(t)
 		if err != nil {glog.Errorf("handleThing()coll.Add(%s): %s", t.ID, err);return}
@@ -205,6 +213,7 @@ func handleConsoleList(w http.ResponseWriter, r *http.Request) {
 	loggedin, userID := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
+		return
 	}
 	coll, err := game.GetCollection(userID)
 	if err != nil {
@@ -249,6 +258,7 @@ func handleGameList(w http.ResponseWriter, r *http.Request) {
 	loggedin, userID := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
+		return
 	}
 	coll, err := game.GetCollection(userID)
 	fmt.Printf("handleGameList, after getcollection %v\n", time.Now().Sub(t0))
@@ -293,6 +303,7 @@ func handleGameList(w http.ResponseWriter, r *http.Request) {
 		gl, err = coll.Games()
 		if err != nil {
 			glog.Errorf("handlegameList.coll.Games(): %s", err)
+			return
 		}
 		AddGameHTML.Execute(w, coll)
 	}
@@ -308,6 +319,7 @@ func handleCollection(w http.ResponseWriter, r *http.Request) {
 	loggedin, userID := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
+		return
 	}
 	_, err := game.GetCollection(userID)
 	if err != nil {
@@ -326,6 +338,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	loggedin,userID := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
+		return
 	}
 	coll, err := game.GetCollection(userID)
 	if err != nil {
@@ -334,7 +347,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	ss := r.FormValue("query")
 	tl,err := game.Search(ss)
-	if err != nil { glog.Errorf("game.Search(%s): %s", ss, err) }
+	if err != nil { glog.Errorf("game.Search(%s): %s", ss, err);return }
 	fmt.Fprintf(w,"<table>\n")
 	PrintListOfThings(w,coll,tl)
 	fmt.Fprintf(w,"</table>\n")
@@ -346,6 +359,7 @@ func handleConsole(w http.ResponseWriter, r *http.Request) {
 	loggedin, userID := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
+		return
 	}
 	_, err := game.GetCollection(userID)
 	if err != nil {
@@ -394,6 +408,7 @@ func handleMyCollection(w http.ResponseWriter, r *http.Request) {
 	loggedin, userID := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
+		return
 	}
 	coll, err := game.GetCollection(userID)
 	if err != nil {

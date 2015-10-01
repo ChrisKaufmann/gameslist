@@ -36,6 +36,7 @@ var (
 	ConsoleOnlyEntryHTML = template.Must(template.ParseFiles("templates/console_only_entry.html"))
 	TableEntryGameHTML   = template.Must(template.ParseFiles("templates/table_entry_game.html"))
 	TableEntryConsoleHTML   = template.Must(template.ParseFiles("templates/table_entry_console.html"))
+	SettingsHTML = template.Must(template.ParseFiles("templates/settings.html"))
 )
 
 func init() {
@@ -80,6 +81,7 @@ func main() {
 	game.MemCache(&mc)
 	http.HandleFunc("/main.html", handleMain)
 	http.HandleFunc("/authorize", auth.HandleAuthorize)
+	http.HandleFunc("/settings", handleSettings)
 	http.HandleFunc("/oauth2callback", auth.HandleOAuth2Callback)
 	http.HandleFunc("/logout", auth.HandleLogout)
 	http.HandleFunc("/list", handleList)
@@ -93,6 +95,7 @@ func main() {
 	http.HandleFunc("/thing/", handleThing)
 	http.HandleFunc("/mycollection", handleMyCollection)
 	http.HandleFunc("/search/", handleSearch)
+	http.HandleFunc("/shared", handleShared)
 	http.HandleFunc("/demo", handleDemo)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	http.HandleFunc("/", handleRoot)
@@ -128,6 +131,18 @@ func handleMain(w http.ResponseWriter, r *http.Request) {
 	handleMyCollection(w,r)
 	fmt.Fprintf(w,"  </div>	</div>	</body>	</html>")
 	fmt.Printf("handleMain %v\n", time.Now().Sub(t0))
+}
+func handleSettings(w http.ResponseWriter, r *http.Request) {
+	t0 := time.Now()
+	loggedin, userID := auth.LoggedIn(w, r)
+	if !loggedin {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	us,err := auth.GetUser(userID)
+	SettingsHTML.Execute(w, us)
+	fmt.Printf("%s,%s",us,err)
+	fmt.Printf("handleSettings %v\n", time.Now().Sub(t0))
 }
 func handleDemo(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
@@ -427,9 +442,10 @@ func PrintListOfThings(w http.ResponseWriter,coll game.Collection,tl []game.Thin
 	fmt.Fprintf(w,"<table>")
 	fmt.Fprintf(w,"<tr><td colspan=2><a name='sym'></a>Console</td><td align=right>Game</td><td>?</td><td>Man</td><td>Box</td></tr>")
 	curr := "9"
+	pttl := game.GetPrintableThings(tl, mtl)
 	for _, myc := range game.GetPrintableThings(cons, mtl) {
 		TableEntryConsoleHTML.Execute(w,myc)
-		for _, t := range game.GetPrintableThings(tl, mtl) {
+		for _, t := range pttl {
 			fc := strings.ToUpper(t.Name[0:1])
 			if fc > curr {
 				fmt.Fprintf(w,"<tr'><td><a name='"+fc+"' id='"+fc+"'></a></td></tr>\n")

@@ -29,10 +29,7 @@ var (
 	cookieName           string = "auth"
 	environment          string = "production"
 	stmtCookieIns        *sql.Stmt
-	stmtGetUserID        *sql.Stmt
 	stmtInsertUser       *sql.Stmt
-	stmtGetUser          *sql.Stmt
-	stmtGetUserBySession *sql.Stmt
 	stmtSessionExists    *sql.Stmt
 	stmtLogoutSession    *sql.Stmt
 )
@@ -50,21 +47,9 @@ func DB(d *sql.DB) {
 	if err != nil {
 		glog.Fatalf(" DB(): u.sth(stmtCookieIns) %s", err)
 	}
-	stmtGetUserID, err = u.Sth(db, "select id from users where email = ?")
-	if err != nil {
-		glog.Fatalf(" DB(): u.sth(stmtGetUserID) %s", err)
-	}
 	stmtInsertUser, err = u.Sth(db, "insert into users (email) values (?) ")
 	if err != nil {
 		glog.Fatalf(" DB(): u.sth(stmtInsertUser) %s", err)
-	}
-	stmtGetUser, err = u.Sth(db, "select user_id from sessions as s where s.session_hash = ?")
-	if err != nil {
-		glog.Fatalf(" DB(): u.sth(stmtGetUser) %s", err)
-	}
-	stmtGetUserBySession, err = u.Sth(db, "select users.id, users.email from users, sessions where users.id=sessions.user_id and sessions.session_hash=?")
-	if err != nil {
-		glog.Fatalf(" DB(): u.sth(stmtGetUserBySession) %s", err)
 	}
 	stmtSessionExists, err = u.Sth(db, "select user_id from sessions where session_hash=?")
 	if err != nil {
@@ -74,6 +59,7 @@ func DB(d *sql.DB) {
 	if err != nil {
 		glog.Fatalf(" DB(): u.sth(stmtLogoutSession) %s", err)
 	}
+	userDB()
 }
 func init() {
 	c, err := goconfig.ReadConfigFile("config")

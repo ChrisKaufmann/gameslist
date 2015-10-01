@@ -6,11 +6,50 @@ import (
 	"errors"
 	"github.com/golang/glog"
 	"fmt"
+	"time"
+	u "github.com/ChrisKaufmann/goutils"
 )
 
 type User struct {
 	ID		int
 	Email	string
+}
+var (
+	stmtInsertUserShare		*sql.Stmt
+	stmtInsertUserLogin		*sql.Stmt
+	stmtGetUserShare		*sql.Stmt
+	stmtGetUserLogin		*sql.Stmt
+	stmtGetUser          *sql.Stmt
+	stmtGetUserID        *sql.Stmt
+	stmtGetUserBySession *sql.Stmt
+	stmtGetUserByShared	 *sql.Stmt
+)
+func userDB() {
+	var err error
+	sius:= "update users set share_token=? where id=?"
+	stmtInsertUserShare, err = u.Sth(db,sius)
+	if err != nil {glog.Fatalf("u.Sth(%s): %s",sius,err)}
+	sgus:= "select share_token from users where id = ?"
+	stmtGetUserShare, err = u.Sth(db,sgus)
+	if err != nil {glog.Fatalf("u.Sth(%s): %s", sgus, err)}
+	siul:= "update users set login_token=? where id=?"
+	stmtInsertUserLogin, err = u.Sth(db,siul)
+	if err != nil {glog.Fatalf("u.Sth(%s): %s", siul, err)}
+	sgul:= "select login_token from users where id=?"
+	stmtGetUserLogin, err = u.Sth(db,sgul)
+	if err != nil {glog.Fatalf("u.Sth(%s): %s", sgul, err)}
+	sgu:="select user_id from sessions as s where s.session_hash = ?"
+	stmtGetUser, err = u.Sth(db,sgu)
+	if err != nil {glog.Fatalf("u.Sth(%s): %s", sgu, err)}
+	sguid:="select id from users where email = ?"
+	stmtGetUserID, err = u.Sth(db,sguid)
+	if err != nil {glog.Fatalf("u.Sth(%s): %s", sguid, err)}
+	sgubs:="select users.id, users.email from users, sessions where users.id=sessions.user_id and sessions.session_hash=?"
+	stmtGetUserBySession,err = u.Sth(db,sgubs)
+	if err != nil {glog.Fatalf("u.Sth(%s): %s", sgubs, err)}
+	sgubsh:="select users.id, users.email from users, sessions where users.id=sessions.user_id and sessions.session_hash=?"
+	stmtGetUserByShared,err = u.Sth(db,sgubsh)
+	if err != nil {glog.Fatalf("u.Sth(%s): %s", sgubsh, err)}
 }
 
 //object functions
@@ -22,6 +61,51 @@ func (us User) AddSession(sh string) (err error) {
 	if err != nil {glog.Errorf("user.AddSession(%s)stmtCookieIns(%s,%s):%s",us,us.ID,sh,err) }
 	return err
 }
+func (us User) ShareCode() (string) {
+	print("user.ShareCode()")
+	t0:=time.Now()
+	var sc string
+	err := stmtGetUserShare.QueryRow(us.ID).Scan(&sc)
+	switch {
+		case err == sql.ErrNoRows:
+			newstr := u.RandomString(128)
+			_,err := stmtInsertUserShare.Exec(newstr,us.ID)
+			if err != nil { glog.Errorf("stmtInsertUserShare.Exec(%s,%s): %s", us.ID,newstr,err);return "" }
+			return newstr
+		case err != nil:
+			glog.Errorf("stmtGetUserShare.QueryRow(%s): %s", us.ID, err)
+			return ""
+		}
+    fmt.Printf("user.ShareCode %v\n", time.Now().Sub(t0))
+	return sc
+}
+func (us User) NewShareCode() (string) {
+	newstr := u.RandomString(128)
+	_,err := stmtInsertUserShare.Exec(newstr,us.ID)
+	if err != nil { glog.Errorf("stmtInsertUserShare.Exec(%s,%s): %s", us.ID,newstr,err);return "" }
+	return us.ShareCode()
+}
+func (us User) LoginCode() (lc string) {
+	err := stmtGetUserLogin.QueryRow(us.ID).Scan(&lc)
+	switch {
+		case err == sql.ErrNoRows:
+			newstr := u.RandomString(128)
+			_, err := stmtInsertUserLogin.Exec(newstr,us.ID)
+			if err != nil { glog.Errorf("stmtInsertUserLogin(%s,%s): %s", newstr,us.ID,err); return "" }
+			return newstr
+		case err != nil:
+			glog.Errorf("stmtGetLoginShare.QueryRow(%s): %s", us.ID, err)
+			return ""
+		}
+	return lc
+}
+func (us User) NewLoginCode() (string) {
+	newstr := u.RandomString(128)
+	_, err := stmtInsertUserLogin.Exec(newstr,us.ID)
+	if err != nil { glog.Errorf("stmtInsertUserLogin(%s,%s): %s", newstr,us.ID,err); return "" }
+	return us.LoginCode()
+}
+
 
 //Non object functions
 func UserExists(email string)(exists bool) {
@@ -66,10 +150,25 @@ func GetUserByEmail(e string)(us User, err error) {
 	us.Email=e
     return us, err
 }
+func GetUser(id int) (us User, err error) {
+return us, err
+}
 func GetUserBySession(s string)(us User, err error) {
 //	stmtGetUserByHash, err = u.Sth(db, "select user.id, user.email from user, sessions where user.id=sessions.user_id and sessions.session_hash=?")
 //	stmtGetUser,err = us.Sth(db, "select user_id from sessions as s where s.session_hash = ?")
 	err = stmtGetUserBySession.QueryRow(s).Scan(&us.ID, &us.Email)
+	switch {
+		case err == sql.ErrNoRows:
+			err = errors.New("No valid session")
+			return us, err
+		case err != nil:
+			glog.Errorf("GetUserBySession():stmtGetUserBySession(%s): %s",s,err)
+			return us,err
+	}
+	return us,err
+}
+func GetUserByShared(s string)(us User, err error) {
+	err = stmtGetUserByShared.QueryRow(s).Scan(&us.ID, &us.Email)
 	switch {
 		case err == sql.ErrNoRows:
 			err = errors.New("No valid session")

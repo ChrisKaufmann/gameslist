@@ -23,6 +23,7 @@ var (
 	stmtGetUserID        *sql.Stmt
 	stmtGetUserBySession *sql.Stmt
 	stmtGetUserByShared	 *sql.Stmt
+	stmtGetUserByID		 *sql.Stmt
 )
 func userDB() {
 	var err error
@@ -50,6 +51,10 @@ func userDB() {
 	sgubsh:="select users.id, users.email from users, sessions where users.id=sessions.user_id and sessions.session_hash=?"
 	stmtGetUserByShared,err = u.Sth(db,sgubsh)
 	if err != nil {glog.Fatalf("u.Sth(%s): %s", sgubsh, err)}
+	sgubid:="select ID,Email from users where id=?"
+	stmtGetUserByID,err = u.Sth(db,sgubid)
+	if err != nil {glog.Fatalf("u.Sth(%s): %s", sgubid, err)}
+
 }
 
 //object functions
@@ -151,7 +156,16 @@ func GetUserByEmail(e string)(us User, err error) {
     return us, err
 }
 func GetUser(id int) (us User, err error) {
-return us, err
+	err = stmtGetUserByID.QueryRow(id).Scan(&us.ID,&us.Email)
+	switch {
+		case err == sql.ErrNoRows:
+			err = errors.New("No user")
+			return us, err
+		case err != nil:
+			glog.Errorf("GetUserBySession():stmtGetUserByID(%s): %s",id,err)
+			return us,err
+	}
+	return us, err
 }
 func GetUserBySession(s string)(us User, err error) {
 //	stmtGetUserByHash, err = u.Sth(db, "select user.id, user.email from user, sessions where user.id=sessions.user_id and sessions.session_hash=?")

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	u "github.com/ChrisKaufmann/goutils"
 	_ "github.com/go-sql-driver/mysql"
+	"fmt"
 	"github.com/golang/glog"
 	"github.com/msbranco/goconfig"
 	"io/ioutil"
@@ -86,12 +87,12 @@ func HandleLogout(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
 		//just means that the cookie doesn't exist or we couldn't read it
-		glog.Infof("HandleLogout: No cookie to logut %s", err)
+		fmt.Printf("HandleLogout: No cookie to logut %s", err)
 		return
 	}
 	tokHash := cookie.Value
 	if !SessionExists(tokHash) {
-		glog.Info("HandleLogout: No matching sessions")
+		fmt.Printf("HandleLogout: No matching sessions")
 	}
 	_, err = stmtLogoutSession.Exec(tokHash)
 	if err != nil {
@@ -124,10 +125,28 @@ func DemoUser(w http.ResponseWriter, r *http.Request) {
 	//set the cookie
 	err = us.AddSession(authString)
 	if err != nil {glog.Errorf("DemoUser(w,r)AddUser(%s): %s", authString, err);return }
-    expire := time.Now().AddDate(1, 0, 0) // year expirey seems reasonable
+    expire := time.Now().AddDate(1, 0, 0)
 	cookie := http.Cookie{Name: cookieName, Value: authString, Expires: expire}
 	http.SetCookie(w, &cookie)
-	http.Redirect(w, r, "/main", http.StatusFound)
+	http.Redirect(w, r, "/main.html", http.StatusFound)
+}
+func LoginToken(w http.ResponseWriter, r *http.Request,lt string)(err error) {
+	us, err := GetUserByLoginToken(lt)
+	fmt.Printf("got user: %s", us)
+	if err != nil {
+		glog.Errorf("LoginToken(%s) No session by that token: %s", lt,err)
+		return err
+	}
+	var authString = u.RandomString(64)
+	fmt.Printf("AddSession(%s)", authString)
+	err = us.AddSession(authString)
+	if err != nil {glog.Errorf("LoginToken():us.AddSession(%s): %s", authString, err);return err }
+	expire := time.Now().AddDate(1,0,0)
+	cookie := http.Cookie{Name: cookieName, Value: authString, Expires: expire}
+	fmt.Printf("http.SetCookie(w,%s)",cookie)
+	http.SetCookie(w, &cookie)
+	http.Redirect(w, r, "/main.html", http.StatusFound)
+	return err
 }
 
 // Function that handles the callback from the Google server
@@ -167,7 +186,7 @@ func HandleOAuth2Callback(w http.ResponseWriter, r *http.Request) {
 	email := m["email"].(string)
 	var us User
 	if !UserExists(email) {
-		glog.Infof("HandleOauth2Callback: creating new user %s", email)
+		fmt.Printf("HandleOauth2Callback: creating new user %s", email)
 		us, err = AddUser(email)
 		if err != nil {
 			glog.Errorf("HandleOauth2Callback:UserExists()AddUser(%s): %s", email, err)
@@ -179,7 +198,6 @@ func HandleOAuth2Callback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-//	_, err = stmtCookieIns.Exec(us.ID, authString)
 	err = us.AddSession(authString)
 
 	if err != nil {
@@ -193,16 +211,18 @@ func HandleOAuth2Callback(w http.ResponseWriter, r *http.Request) {
 }
 func LoggedIn(w http.ResponseWriter, r *http.Request) (bool, int) {
 	if environment == "test" {
+		fmt.Printf("Test login")
 		return true, 1
 	}
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
 		//just means that the cookie doesn't exist or we couldn't read it
-		glog.Info("LoggedIn(): No cookie")
+		fmt.Printf("LoggedIn(): No cookie: %s", err)
 		return false, 0
 	}
 	tokHash := cookie.Value
 	if !SessionExists(tokHash) {
+		fmt.Printf("SessionExists(%s) is false", tokHash)
 		return false, 0
 	}
 	us, err := GetUserBySession(tokHash)
@@ -213,5 +233,6 @@ func LoggedIn(w http.ResponseWriter, r *http.Request) (bool, int) {
 	if us.ID > 0 {
 		return true, us.ID
 	}
+	fmt.Printf("UID: %s, returning false", us.ID)
 	return false, 0
 }

@@ -24,42 +24,55 @@ var (
 	stmtGetUserBySession *sql.Stmt
 	stmtGetUserByShared	 *sql.Stmt
 	stmtGetUserByID		 *sql.Stmt
+	stmtGetUserByLoginCode  *sql.Stmt
 )
 func userDB() {
 	var err error
 	sius:= "update users set share_token=? where id=?"
 	stmtInsertUserShare, err = u.Sth(db,sius)
 	if err != nil {glog.Fatalf("u.Sth(%s): %s",sius,err)}
-	sgus:= "select share_token from users where id = ?"
+
+	sgus:= "select ifnull(share_token,'') from users where id = ?"
 	stmtGetUserShare, err = u.Sth(db,sgus)
 	if err != nil {glog.Fatalf("u.Sth(%s): %s", sgus, err)}
+
 	siul:= "update users set login_token=? where id=?"
 	stmtInsertUserLogin, err = u.Sth(db,siul)
 	if err != nil {glog.Fatalf("u.Sth(%s): %s", siul, err)}
-	sgul:= "select login_token from users where id=?"
+
+	sgul:= "select ifnull(login_token,'') from users where id=?"
 	stmtGetUserLogin, err = u.Sth(db,sgul)
 	if err != nil {glog.Fatalf("u.Sth(%s): %s", sgul, err)}
+
 	sgu:="select user_id from sessions as s where s.session_hash = ?"
 	stmtGetUser, err = u.Sth(db,sgu)
 	if err != nil {glog.Fatalf("u.Sth(%s): %s", sgu, err)}
+
 	sguid:="select id from users where email = ?"
 	stmtGetUserID, err = u.Sth(db,sguid)
 	if err != nil {glog.Fatalf("u.Sth(%s): %s", sguid, err)}
+
 	sgubs:="select users.id, users.email from users, sessions where users.id=sessions.user_id and sessions.session_hash=?"
 	stmtGetUserBySession,err = u.Sth(db,sgubs)
 	if err != nil {glog.Fatalf("u.Sth(%s): %s", sgubs, err)}
-	sgubsh:="select users.id, users.email from users, sessions where users.id=sessions.user_id and sessions.session_hash=?"
+
+	sgubsh:="select id, email from users where share_token = ?"
 	stmtGetUserByShared,err = u.Sth(db,sgubsh)
 	if err != nil {glog.Fatalf("u.Sth(%s): %s", sgubsh, err)}
+
 	sgubid:="select ID,Email from users where id=?"
 	stmtGetUserByID,err = u.Sth(db,sgubid)
 	if err != nil {glog.Fatalf("u.Sth(%s): %s", sgubid, err)}
+
+	sgublc:="select id, email from users where login_token = ?"
+	stmtGetUserByLoginCode, err = u.Sth(db,sgublc)
+	if err != nil {glog.Fatalf("u.Sth(%s): %s", sgublc, err)}
 
 }
 
 //object functions
 func (us User) String() (string) {
-    return fmt.Sprintf("ID: %s, Email: %s",us.ID,us.Email)
+    return fmt.Sprintf("ID: %s, Email: %s",u.Tostr(us.ID),us.Email)
 }
 func (us User) AddSession(sh string) (err error) {
 	_,err = stmtCookieIns.Exec(us.ID, sh)
@@ -70,9 +83,11 @@ func (us User) ShareCode() (string) {
 	print("user.ShareCode()")
 	t0:=time.Now()
 	var sc string
+	print("us.id:"+u.Tostr(us.ID))
 	err := stmtGetUserShare.QueryRow(us.ID).Scan(&sc)
 	switch {
-		case err == sql.ErrNoRows:
+		case err == sql.ErrNoRows || sc=="":
+			glog.Infof("No existing share code")
 			newstr := u.RandomString(128)
 			_,err := stmtInsertUserShare.Exec(newstr,us.ID)
 			if err != nil { glog.Errorf("stmtInsertUserShare.Exec(%s,%s): %s", us.ID,newstr,err);return "" }
@@ -86,6 +101,7 @@ func (us User) ShareCode() (string) {
 }
 func (us User) NewShareCode() (string) {
 	newstr := u.RandomString(128)
+	print("newstr: "+newstr+"\n")
 	_,err := stmtInsertUserShare.Exec(newstr,us.ID)
 	if err != nil { glog.Errorf("stmtInsertUserShare.Exec(%s,%s): %s", us.ID,newstr,err);return "" }
 	return us.ShareCode()
@@ -93,7 +109,8 @@ func (us User) NewShareCode() (string) {
 func (us User) LoginCode() (lc string) {
 	err := stmtGetUserLogin.QueryRow(us.ID).Scan(&lc)
 	switch {
-		case err == sql.ErrNoRows:
+		case err == sql.ErrNoRows || lc == "":
+			glog.Infof("No existing login code")
 			newstr := u.RandomString(128)
 			_, err := stmtInsertUserLogin.Exec(newstr,us.ID)
 			if err != nil { glog.Errorf("stmtInsertUserLogin(%s,%s): %s", newstr,us.ID,err); return "" }
@@ -168,8 +185,6 @@ func GetUser(id int) (us User, err error) {
 	return us, err
 }
 func GetUserBySession(s string)(us User, err error) {
-//	stmtGetUserByHash, err = u.Sth(db, "select user.id, user.email from user, sessions where user.id=sessions.user_id and sessions.session_hash=?")
-//	stmtGetUser,err = us.Sth(db, "select user_id from sessions as s where s.session_hash = ?")
 	err = stmtGetUserBySession.QueryRow(s).Scan(&us.ID, &us.Email)
 	switch {
 		case err == sql.ErrNoRows:
@@ -193,9 +208,20 @@ func GetUserByShared(s string)(us User, err error) {
 	}
 	return us,err
 }
+func GetUserByLoginToken(s string) (us User, err error) {
+	err = stmtGetUserByLoginCode.QueryRow(s).Scan(&us.ID, &us.Email)
+	switch {
+		case err == sql.ErrNoRows:
+			glog.Errorf("GetUserByLoginToken(s):stmtGetUserByLoginCode(%s):%s",s,err)
+			err = errors.New("No valid session")
+			return us, err
+		case err != nil:
+			glog.Errorf("GetUserByLoginCode():stmtGetUserByLoginCode(%s): %s", s, err)
+			return us,err
+	}
+	return us,err
+}
 func SessionExists(s string)(e bool) {
-//	stmtSessionExists, err := u.Sth(db, "select user_id from sessions where session_hash=?"
-
 	var uid int
 	err := stmtSessionExists.QueryRow(s).Scan(&uid)
 	switch {

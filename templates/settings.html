@@ -1,4 +1,6 @@
-ID: {{.ID}}
-Email: {{.Email}}
-ShareCode: {{.ShareCode}}
-LoginCode: {{.LoginCode}}
+<table>
+<tr><td>ID:</td><td>{{.ID}}</td></tr>
+<tr><td>Email:</td><td>{{.Email}}</td></tr>
+<tr><td>ShareCode:</td><td><input type="text" length=20 value="{{.ShareCode}}"/></td><td><a href="/share/{{.ShareCode}}">Share Link</a></td></tr>
+<tr><td>LoginCode:</td><td><input type="text" length=20 value="{{.LoginCode}}"/><td><a href="/login/{{.LoginCode}}">Login link</a></td></tr>
+</table>

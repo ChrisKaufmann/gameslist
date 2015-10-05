@@ -84,6 +84,7 @@ func main() {
 	http.HandleFunc("/settings", handleSettings)
 	http.HandleFunc("/oauth2callback", auth.HandleOAuth2Callback)
 	http.HandleFunc("/logout", auth.HandleLogout)
+	http.HandleFunc("/login/", handleLogin)
 	http.HandleFunc("/list", handleList)
 	http.HandleFunc("/list/consoles", handleConsoleList)
 	http.HandleFunc("/list/games", handleGameList)
@@ -95,7 +96,7 @@ func main() {
 	http.HandleFunc("/thing/", handleThing)
 	http.HandleFunc("/mycollection", handleMyCollection)
 	http.HandleFunc("/search/", handleSearch)
-	http.HandleFunc("/shared", handleShared)
+	http.HandleFunc("/shared/", handleShared)
 	http.HandleFunc("/demo", handleDemo)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	http.HandleFunc("/", handleRoot)
@@ -107,6 +108,7 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	loggedin, _ := auth.LoggedIn(w, r)
 	if !loggedin {
+		fmt.Printf("Not logged in")
 		if err := indexHtml.Execute(w, nil); err != nil {
 			glog.Errorf("HandleRoot(): %s", err)
 			return
@@ -140,14 +142,27 @@ func handleSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	us,err := auth.GetUser(userID)
+	fmt.Printf("User:  %s,%s",us,err)
 	SettingsHTML.Execute(w, us)
-	fmt.Printf("%s,%s",us,err)
 	fmt.Printf("handleSettings %v\n", time.Now().Sub(t0))
 }
 func handleDemo(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	auth.DemoUser(w,r)
 	fmt.Printf("handleDemo %v\n", time.Now().Sub(t0))
+}
+func handleLogin(w http.ResponseWriter, r *http.Request) {
+	t0 := time.Now()
+	fmt.Printf("HandleLogin()")
+	var lt string
+    u.PathVars(r,"/login/", &lt)
+	fmt.Printf("lt: %s", lt)
+	err := auth.LoginToken(w,r,lt)
+	if err != nil { 
+		//http.Redirect(w, r, "/", http.StatusFound)
+		glog.Infof("%s", err)
+	}
+	fmt.Printf("handleLogin %v\n", time.Now().Sub(t0))
 }
 func handleThing(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()

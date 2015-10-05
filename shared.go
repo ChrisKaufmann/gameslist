@@ -18,7 +18,7 @@ var (
 func handleShared(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	var sid string
-	u.PathVars(r,"/shared/", &sid)
+	u.PathVars(r,"/share/", &sid)
 
 	suser, err := auth.GetUserByShared(sid)
 	if err != nil { glog.Errorf("handleShared - auth.GetUserByShared(%s): %s", sid, err);return }

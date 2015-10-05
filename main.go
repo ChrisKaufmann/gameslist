@@ -96,7 +96,7 @@ func main() {
 	http.HandleFunc("/thing/", handleThing)
 	http.HandleFunc("/mycollection", handleMyCollection)
 	http.HandleFunc("/search/", handleSearch)
-	http.HandleFunc("/shared/", handleShared)
+	http.HandleFunc("/share/", handleShared)
 	http.HandleFunc("/demo", handleDemo)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	http.HandleFunc("/", handleRoot)
@@ -472,4 +472,6 @@ func PrintListOfThings(w http.ResponseWriter,coll game.Collection,tl []game.Thin
 		}
 	}
 	fmt.Fprintf(w,"</table>")
+	AddConsoleHTML.Execute(w,nil)
+	AddGameHTML.Execute(w,coll)
 }

@@ -10,22 +10,23 @@
 	<div id="home-header" class="top_menu">
 		<table width="100%">
 			<tr>
-				<td align="top"><div id="mycoll"><a href='/'><img src='/static/home.jpg' height='20'></a></div></td>
+				<td align="top"><div id="mycoll"><a href='/'><img src='/static/home.jpg' id='home_img'></a></div></td>
 				<td align="center">
 					<div id="search_div" style="width:100%;float:left">
 						<input type='text' name='search_text' id='search_text' placeholder='Search'>
 					</div>
 				</td>
 				<td>
-					<div id="settings"><a href="/settings"><img src='/static/settings.jpeg' height='20px'></a></div>
+					<div id="settings"><a href="/settings"><img src='/static/settings.jpeg' id='settings_img'></a></div>
 				</td>
 				<td>
-					<div id="logout"><a href="/logout"><img src='/static/logout.png' height='20px'></a></div>
+					<div id="logout"><a href="/logout"><img src='/static/logout.png' id='logout_img'></a></div>
 				</td>
 			</tr>
 		</table>
 	</div>
 </div>
+<br>
 <div id='floating_sidebar'>
 <a href="#sym">#</a><br>
 <a href="#A">a</a><br>
@@ -55,5 +56,5 @@
 <a href="#Y">y</a><br>
 <a href="#Z">z</a><br>
 </div>
-<div id='content'  style="width:100%;float:left;">
-	<div class="raw_list" style="width:50%;padding:10px;float:left" id="content_div">
+<div id='content'  style="position:relative;width:100%;float:left;">
+	<div class="raw_list" style="width:100%;padding:10px;float:left" id="content_div">

@@ -1,6 +1,6 @@
 <tr>
 	<form name="coll_{{.ID}}">
-	<td colspan=2><div id='console_div_{{ .ID }}' onclick="show_games('{{.ID}}')"><p class="fonts">{{ .Name }}</p></div></td>
+	<td colspan=3 align=left><div id='console_div_{{ .ID }}' onclick="show_games('{{.ID}}')"><h2>{{ .Name }}</h2></div></td>
 	<td></td>
 	<td><input type="checkbox" id="checkbox-{{.ID}}" {{ .Checked }} onchange="save_change({{.ID}},'checkbox-{{.ID}}')"></td>
 	<td><input type="checkbox" id="checkbox-manual-{{.ID}}" {{ .ManualChecked }} onchange="save_change('{{.Manual.ID}}','checkbox-manual-{{.ID}}')"></td>

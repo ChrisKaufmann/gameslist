@@ -1,7 +1,7 @@
 <tr>
 	<form name="coll_{{.ID}}">
 	<td></td>
-	<td colspan=2 align='right'><h3>{{ .Name }}</h3></td>
+	<td colspan=3 align='right'><h3>{{ .Name }}</h3></td>
     <td><input type="checkbox" id="checkbox-{{.ID}}" {{ .Checked }} onchange="save_change({{.ID}},'checkbox-{{.ID}}')"></td>
     <td><input type="checkbox" id="checkbox-manual-{{.ID}}" {{ .ManualChecked }} onchange="save_change('{{.ManualID}}','checkbox-manual-{{.ID}}')"></td>
     <td><input type="checkbox" id="checkbox-box-{{.ID}}" {{ .BoxChecked }} onchange="save_change('{{.BoxID}}','checkbox-box-{{.ID}}')"></td>

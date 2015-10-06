@@ -454,8 +454,8 @@ func PrintListOfThings(w http.ResponseWriter,coll game.Collection,tl []game.Thin
 	mtl := coll.MyThingsHash()
 	cons, err := game.GetAllConsoles()
 	if err != nil {glog.Errorf("PrintListOfThings-game.GetAllConsoles(): %s", err) ;return}
-	fmt.Fprintf(w,"<table>")
-	fmt.Fprintf(w,"<tr><td colspan=2><a name='sym'></a>Console</td><td align=right>Game</td><td>?</td><td>Man</td><td>Box</td></tr>")
+	fmt.Fprintf(w,"<table border=2>")
+	fmt.Fprintf(w,"<tr><td colspan=><a name='sym'></a>Console</td><td align=right>Game</td><td>?</td><td>Man</td><td>Box</td></tr>")
 	curr := "9"
 	pttl := game.GetPrintableThings(tl, mtl)
 	for _, myc := range game.GetPrintableThings(cons, mtl) {

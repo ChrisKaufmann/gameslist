@@ -37,7 +37,6 @@ var (
 	TableEntryGameHTML   = template.Must(template.ParseFiles("templates/table_entry_game.html"))
 	TableEntryConsoleHTML   = template.Must(template.ParseFiles("templates/table_entry_console.html"))
 	SettingsHTML = template.Must(template.ParseFiles("templates/settings.html"))
-	MenuHTML	=template.Must(template.ParseFiles("templates/menu.html"))
 )
 
 func init() {

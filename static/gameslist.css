@@ -28,6 +28,7 @@ body {
 div.top_menu_container {
 	width:100%;
 	background-color: #c9dddd;
+	z-index:99;
 }
 div.top_menu {
 	width: 20%;
@@ -206,9 +207,13 @@ div.toggle {
      #home_img { height:10vw; width:10vw }
      #settings_img { height:10vw; width:10vw }
      #logout_img { height:10vw; width:10vw }
-     #search_text { height:10vw;width:68vw;font-size:7vw; }
+     #search_text { height:10vw;width:63vw;font-size:7vw; }
 	 #content {top:11vw;}
-	 input[type=checkbox] { transform: scale(5); -webkit-transform: scale(5); }
+	 #floating_sidebar {top:13vw;}
+	 #gh_td {width:40px}
+	 #man_td {width:40px}
+	 #box_td {width:40px}
+	 input[type=checkbox] { transform: scale(3); -webkit-transform: scale(3); }
 }
 
 /* Landscape */

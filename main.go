@@ -37,6 +37,7 @@ var (
 	TableEntryGameHTML   = template.Must(template.ParseFiles("templates/table_entry_game.html"))
 	TableEntryConsoleHTML   = template.Must(template.ParseFiles("templates/table_entry_console.html"))
 	SettingsHTML = template.Must(template.ParseFiles("templates/settings.html"))
+	MenuHTML	=template.Must(template.ParseFiles("templates/menu.html"))
 )
 
 func init() {
@@ -454,8 +455,8 @@ func PrintListOfThings(w http.ResponseWriter,coll game.Collection,tl []game.Thin
 	mtl := coll.MyThingsHash()
 	cons, err := game.GetAllConsoles()
 	if err != nil {glog.Errorf("PrintListOfThings-game.GetAllConsoles(): %s", err) ;return}
-	fmt.Fprintf(w,"<table border=2>")
-	fmt.Fprintf(w,"<tr><td colspan=><a name='sym'></a>Console</td><td align=right>Game</td><td>?</td><td>Man</td><td>Box</td></tr>")
+	fmt.Fprintf(w,"<table id='data_table'>")
+	fmt.Fprintf(w,"<tr><td colspan=><a name='sym'></a>Console</td><td></td><td align=right>Game</td><td id='gh_td'>?</td><td id='man_td'>Man</td><td id='box_td'>Box</td></tr>")
 	curr := "9"
 	pttl := game.GetPrintableThings(tl, mtl)
 	for _, myc := range game.GetPrintableThings(cons, mtl) {

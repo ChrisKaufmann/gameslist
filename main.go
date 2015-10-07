@@ -31,8 +31,7 @@ var (
 	GamesToggle          = template.Must(template.ParseFiles("templates/games_toggle.html"))
 	IndentListEntryHtml  = template.Must(template.ParseFiles("templates/indent_list_entry.html"))
 	ConsoleLinkListEntry = template.Must(template.ParseFiles("templates/console_link_list_entry.html"))
-	AddConsoleHTML       = template.Must(template.ParseFiles("templates/add_console.html"))
-	AddGameHTML          = template.Must(template.ParseFiles("templates/add_game.html"))
+	AddHTML          = template.Must(template.ParseFiles("templates/add.html"))
 	ConsoleOnlyEntryHTML = template.Must(template.ParseFiles("templates/console_only_entry.html"))
 	TableEntryGameHTML   = template.Must(template.ParseFiles("templates/table_entry_game.html"))
 	TableEntryConsoleHTML   = template.Must(template.ParseFiles("templates/table_entry_console.html"))
@@ -278,7 +277,6 @@ func handleConsoleList(w http.ResponseWriter, r *http.Request) {
 		ListEntryHtml.Execute(w, c)
 	}
 	fmt.Fprintf(w, "<tr><td colspan=3>")
-	AddConsoleHTML.Execute(w, nil)
 	fmt.Fprintf(w, "</td></tr>")
 	fmt.Fprintf(w, "</table>")
 	fmt.Printf("handleConsoleList %v\n", time.Now().Sub(t0))
@@ -299,7 +297,6 @@ func handleGameList(w http.ResponseWriter, r *http.Request) {
 	var gl []game.Thing
 	switch r.FormValue("filter") {
 	case "all":
-		AddGameHTML.Execute(w, coll)
 		//mytem = ConsoleLinkListEntry
 		gl, err = game.GetAllConsoles()
 		if err != nil {
@@ -335,7 +332,6 @@ func handleGameList(w http.ResponseWriter, r *http.Request) {
 			glog.Errorf("handlegameList.coll.Games(): %s", err)
 			return
 		}
-		AddGameHTML.Execute(w, coll)
 	}
 	fmt.Printf("handleGameList, before execute loop %v\n", time.Now().Sub(t0))
 	fmt.Fprintf(w, "<table>")
@@ -455,7 +451,7 @@ func PrintListOfThings(w http.ResponseWriter,coll game.Collection,tl []game.Thin
 	cons, err := game.GetAllConsoles()
 	if err != nil {glog.Errorf("PrintListOfThings-game.GetAllConsoles(): %s", err) ;return}
 	fmt.Fprintf(w,"<table id='data_table'>")
-	fmt.Fprintf(w,"<tr><td colspan=><a name='sym'></a>Console</td><td></td><td align=right>Game</td><td id='gh_td'>?</td><td id='man_td'>Man</td><td id='box_td'>Box</td></tr>")
+	fmt.Fprintf(w,"<tr><td colspan=2><a name='sym'></a>Console</td><td></td><td align=right>Game</td><td id='gh_td'>?</td><td id='man_td'>Man</td><td id='box_td'>Box</td></tr>")
 	curr := "9"
 	pttl := game.GetPrintableThings(tl, mtl)
 	for _, myc := range game.GetPrintableThings(cons, mtl) {
@@ -472,6 +468,5 @@ func PrintListOfThings(w http.ResponseWriter,coll game.Collection,tl []game.Thin
 		}
 	}
 	fmt.Fprintf(w,"</table>")
-	AddConsoleHTML.Execute(w,nil)
-	AddGameHTML.Execute(w,coll)
+	AddHTML.Execute(w,coll)
 }

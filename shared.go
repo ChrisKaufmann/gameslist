@@ -11,6 +11,7 @@ import (
 	"net/http"
 )
 var (
+	ShareMain	=	template.Must(template.ParseFiles("templates/ShareMain.html"))
 	ReadTableEntryConsole = template.Must(template.ParseFiles("templates/ReadTableEntryConsole.html"))
 	ReadTableEntryGame = template.Must(template.ParseFiles("templates/ReadTableEntryGame.html"))
 )
@@ -34,7 +35,7 @@ func handleShared(w http.ResponseWriter, r *http.Request) {
 
 	mtl := coll.MyThingsHash()
 	mttl := game.GetPrintableThings(cl, mtl)
-
+	ShareMain.Execute(w,nil)
 	fmt.Fprintf(w,"<table>")
 	fmt.Fprintf(w,"<tr><td colspan=2><a name='sym'></a>Console</td><td align=right>Game</td><td>?</td><td>Man</td><td>Box</td></tr>")
 	for _, myc := range game.GetPrintableThings(cons, mtl) {

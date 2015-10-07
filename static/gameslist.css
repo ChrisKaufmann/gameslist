@@ -55,12 +55,19 @@ div.toggle {
   and (min-device-width: 320px) 
   and (max-device-width: 480px)
   and (-webkit-min-device-pixel-ratio: 2) {
-     .fonts { font-size: 75%;}
-     .h3 { font-size : 50%; }
-     #home_img { height:10vw; width:10vw }
-     #settings_img { height:10vw; width:10vw }
-     #logout_img { height:10vw; width:10vw }
-     #search_text { height:10vw;width:50vw }
+     .fonts {font-size: 75%;}
+     h3 { font-size : 5vw; }
+	 h2 { font-size : 7vw; }
+     #home_img { height:6vw; width:6vw }
+     #settings_img { height:6vw; width:6vw }
+     #logout_img { height:6vw; width:6vw }
+     #search_text { height:6vw;width:70vw;font-size:5vw; }
+	 #content {top:3vw;}
+	 #floating_sidebar {top:13vw;}
+	 #gh_td {width:40px}
+	 #man_td {width:40px}
+	 #box_td {width:40px}
+	 input[type=checkbox] { transform: scale(1); -webkit-transform: scale(1); }
 }
 
 /* Portrait */
@@ -69,12 +76,6 @@ div.toggle {
   and (max-device-width: 480px)
   and (-webkit-min-device-pixel-ratio: 2)
   and (orientation: portrait) {
-     .fonts { font-size: 75%;}
-     .h3 { font-size : 50%; }
-     #home_img { height:11vw; width:10vw }
-     #settings_img { height:10vw; width:10vw }
-     #logout_img { height:10vw; width:10vw }
-     #search_text { height:10vw;width:50vw }
 }
 
 /* Landscape */
@@ -83,12 +84,6 @@ div.toggle {
   and (max-device-width: 480px)
   and (-webkit-min-device-pixel-ratio: 2)
   and (orientation: landscape) {
-     .fonts { font-size: 75%;}
-     .h3 { font-size : 50%; }
-     #home_img { height:12vw; width:10vw }
-     #settings_img { height:10vw; width:10vw }
-     #logout_img { height:10vw; width:10vw }
-     #search_text { height:10vw;width:50vw }
 }
 
 /* ----------- iPhone 5 and 5S ----------- */
@@ -98,13 +93,19 @@ div.toggle {
   and (min-device-width: 320px) 
   and (max-device-width: 568px)
   and (-webkit-min-device-pixel-ratio: 2) {
-     .fonts { font-size: 75%;}
-     .h3 { font-size : 50%; }
-     #home_img { height:13vw; width:10vw }
-     #settings_img { height:10vw; width:10vw }
-     #logout_img { height:10vw; width:10vw }
-     #search_text { height:10vw;width:50vw }
-
+     .fonts {font-size: 75%;}
+     h3 { font-size : 5vw; }
+	 h2 { font-size : 7vw; }
+     #home_img { height:6vw; width:6vw }
+     #settings_img { height:6vw; width:6vw }
+     #logout_img { height:6vw; width:6vw }
+     #search_text { height:6vw;width:70vw;font-size:5vw; }
+	 #content {top:6vw;}
+	 #floating_sidebar {top:13vw;}
+	 #gh_td {width:40px}
+	 #man_td {width:40px}
+	 #box_td {width:40px}
+	 input[type=checkbox] { transform: scale(1); -webkit-transform: scale(1); }
 }
 
 /* Portrait */
@@ -113,12 +114,6 @@ div.toggle {
   and (max-device-width: 568px)
   and (-webkit-min-device-pixel-ratio: 2)
   and (orientation: portrait) {
-     .fonts { font-size: 75%;}
-     .h3 { font-size : 50%; }
-     #home_img { height:14vw; width:10vw }
-     #settings_img { height:10vw; width:10vw }
-     #logout_img { height:10vw; width:10vw }
-     #search_text { height:10vw;width:50vw }
 }
 
 /* Landscape */
@@ -127,12 +122,6 @@ div.toggle {
   and (max-device-width: 568px)
   and (-webkit-min-device-pixel-ratio: 2)
   and (orientation: landscape) {
-     .fonts { font-size: 75%;}
-     .h3 { font-size : 50%; }
-     #home_img { height:15vw; width:10vw }
-     #settings_img { height:10vw; width:10vw }
-     #logout_img { height:10vw; width:10vw }
-     #search_text { height:10vw;width:50vw }
 }
 
 /* ----------- iPhone 6 ----------- */
@@ -142,12 +131,19 @@ div.toggle {
   and (min-device-width: 375px) 
   and (max-device-width: 667px) 
   and (-webkit-min-device-pixel-ratio: 2) { 
-     .fonts { font-size: 75%;}
-     .h3 { font-size : 50%; }
-     #home_img { height:16vw; width:10vw }
-     #settings_img { height:10vw; width:10vw }
-     #logout_img { height:10vw; width:10vw }
-     #search_text { height:10vw;width:50vw }
+     .fonts {font-size: 75%;}
+     h3 { font-size : 5vw; }
+	 h2 { font-size : 7vw; }
+     #home_img { height:6vw; width:6vw }
+     #settings_img { height:6vw; width:6vw }
+     #logout_img { height:6vw; width:6vw }
+     #search_text { height:6vw;width:70vw;font-size:5vw; }
+	 #content {top:2vw;}
+	 #floating_sidebar {top:13vw;}
+	 #gh_td {width:40px}
+	 #man_td {width:40px}
+	 #box_td {width:40px}
+	 input[type=checkbox] { transform: scale(2); -webkit-transform: scale(2); }
 }
 
 /* Portrait */
@@ -156,12 +152,6 @@ div.toggle {
   and (max-device-width: 667px) 
   and (-webkit-min-device-pixel-ratio: 2)
   and (orientation: portrait) { 
-     .fonts {font-size: 75%;}
-     .h3 { font-size : 50%; }
-     #home_img { height:17vw; width:10vw }
-     #settings_img { height:10vw; width:10vw }
-     #logout_img { height:10vw; width:10vw }
-     #search_text { height:10vw;width:50vw }
 }
 
 /* Landscape */
@@ -170,12 +160,6 @@ div.toggle {
   and (max-device-width: 667px) 
   and (-webkit-min-device-pixel-ratio: 2)
   and (orientation: landscape) { 
-     .fonts { font-size: 75%;}
-     .h3 { font-size : 50%; }
-     #home_img { height:17vw; width:10vw }
-     #settings_img { height:10vw; width:10vw }
-     #logout_img { height:10vw; width:10vw }
-     #search_text { height:10vw;width:50vw }
 
 }
 
@@ -187,12 +171,23 @@ div.toggle {
   and (max-device-width: 736px) 
   and (-webkit-min-device-pixel-ratio: 3) { 
      .fonts {font-size: 75%;}
-     .h3 { font-size : 50%; }
-     #home_img { height:18vw; width:10vw }
+     h3 { font-size : 5vw; }
+	 h2 { font-size : 7vw; }
+     #home_img { height:10vw; width:10vw }
      #settings_img { height:10vw; width:10vw }
      #logout_img { height:10vw; width:10vw }
-     #search_text { height:10vw;width:50vw }
-
+     #search_text { height:10vw;width:63vw;font-size:7vw; }
+	 #content {top:7vw;}
+	 #floating_sidebar {top:13vw;}
+	 #gh_td {width:40px}
+	 #man_td {width:40px}
+	 #box_td {width:40px}
+	 #add_game_select {height: 5vw; }
+	 #add_console_text { height:10vw; width:55vw; font-size:7vw; }
+	 #add_game_text { height:10vw; width:20vw;font-size:7vw; }
+	 input[type=checkbox] { transform: scale(3); -webkit-transform: scale(3); }
+	 input[type=button] {transform: scale(2); -webkit-transform: scale(2); }
+	 input[type=select] {transform: scale(2); -webkit-transform: scale(2); }
 }
 
 /* Portrait */
@@ -201,19 +196,6 @@ div.toggle {
   and (max-device-width: 736px) 
   and (-webkit-min-device-pixel-ratio: 3)
   and (orientation: portrait) { 
-     .fonts {font-size: 75%;}
-     h3 { font-size : 5vw; }
-     h2 { font-size : 7vw; }
-     #home_img { height:10vw; width:10vw }
-     #settings_img { height:10vw; width:10vw }
-     #logout_img { height:10vw; width:10vw }
-     #search_text { height:10vw;width:63vw;font-size:7vw; }
-	 #content {top:11vw;}
-	 #floating_sidebar {top:13vw;}
-	 #gh_td {width:40px}
-	 #man_td {width:40px}
-	 #box_td {width:40px}
-	 input[type=checkbox] { transform: scale(3); -webkit-transform: scale(3); }
 }
 
 /* Landscape */
@@ -222,10 +204,15 @@ div.toggle {
   and (max-device-width: 736px) 
   and (-webkit-min-device-pixel-ratio: 3)
   and (orientation: landscape) { 
-     .fonts {font-size: 75%;}
-     .h3 { font-size : 50%; }
-     #home_img { height:10vw; width:10vw }
-     #settings_img { height:10vw; width:10vw }
-     #logout_img { height:10vw; width:10vw }
-     #search_text { height:10vw;width:50vw }
+  	.fonts {font-size: 75%; }
+	h3 { font-size : 2em; }
+	h2 { font-size : 3em; }
+	#home_img { height:5vw; width:5vw }
+	#settings_img { height:5vw; width:5vw }
+	#logout_img { height:5vw; width:5vw }
+	#search_text { height:5vw;width:63vw;font-size:4vw; }
+	#man_td {width:40px}
+	#add_console_text { height:5vw; width:75vw; font-size:4vw; }
+	#add_game_text { height:5vw; width:60vw;font-size:4vw; }
+	input[type=button] {transform: scale(2); -webkit-transform: scale(2); }
 }

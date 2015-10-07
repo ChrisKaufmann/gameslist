@@ -1,12 +1,12 @@
 [DB]
-db=gameslist
+db=gameslist_demo
 host=
-user=gameslist_user
-pass=extremely_complex_password
+user=gameslist_demo
+pass=yMazaWzRnLvmkYiIMFEHDqjofEGr1NUQ
 [Google]
-ClientId=a_number.apps.googleusercontent.com
-ClientSecret=extremely complex secret
+ClientId=18150254528.apps.googleusercontent.com
+ClientSecret=WG0dpkjHnreoG85OvwXk16O7
 [Web]
-port=my port
-url=http://myurl.example.com
-environment=dev
+port=9005
+url=https://gameslist.chriskaufmann.com/
+environment=demo

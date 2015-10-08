@@ -57,7 +57,7 @@ div.toggle {
   and (-webkit-min-device-pixel-ratio: 2) {
      .fonts {font-size: 75%;}
      h3 { font-size : 5vw; }
-	 h2 { font-size : 7vw; }
+	 h2 { font-size : 6vw; }
      #home_img { height:6vw; width:6vw }
      #settings_img { height:6vw; width:6vw }
      #logout_img { height:6vw; width:6vw }
@@ -95,7 +95,7 @@ div.toggle {
   and (-webkit-min-device-pixel-ratio: 2) {
      .fonts {font-size: 75%;}
      h3 { font-size : 5vw; }
-	 h2 { font-size : 7vw; }
+	 h2 { font-size : 6vw; }
      #home_img { height:6vw; width:6vw }
      #settings_img { height:6vw; width:6vw }
      #logout_img { height:6vw; width:6vw }
@@ -133,7 +133,7 @@ div.toggle {
   and (-webkit-min-device-pixel-ratio: 2) { 
      .fonts {font-size: 75%;}
      h3 { font-size : 5vw; }
-	 h2 { font-size : 7vw; }
+	 h2 { font-size : 6vw; }
      #home_img { height:6vw; width:6vw }
      #settings_img { height:6vw; width:6vw }
      #logout_img { height:6vw; width:6vw }
@@ -172,7 +172,8 @@ div.toggle {
   and (-webkit-min-device-pixel-ratio: 3) { 
      .fonts {font-size: 75%;}
      h3 { font-size : 5vw; }
-	 h2 { font-size : 7vw; }
+	 h2 { font-size : 6vw; }
+	 .sidebar {font-size : 3em; }
      #home_img { height:10vw; width:10vw }
      #settings_img { height:10vw; width:10vw }
      #logout_img { height:10vw; width:10vw }
@@ -183,8 +184,8 @@ div.toggle {
 	 #man_td {width:40px}
 	 #box_td {width:40px}
 	 #add_game_select {height: 5vw; }
-	 #add_console_text { height:10vw; width:55vw; font-size:7vw; }
-	 #add_game_text { height:10vw; width:20vw;font-size:7vw; }
+	 #add_console_text { height:10vw; width:75vw; font-size:7vw; }
+	 #add_game_text { height:10vw; width:60vw;font-size:7vw; }
 	 input[type=checkbox] { transform: scale(3); -webkit-transform: scale(3); }
 	 input[type=button] {transform: scale(2); -webkit-transform: scale(2); }
 	 input[type=select] {transform: scale(2); -webkit-transform: scale(2); }

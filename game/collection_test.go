@@ -97,5 +97,6 @@ func TestCollection(t *testing.T) {
 	print("\tcoll.Have(c3)\n")
 	hc3 := coll.Have(c3);if hc3 == true || err != nil{t.Errorf("coll.Have(c3)", err)}
 
+
 	coll.Print()
 }

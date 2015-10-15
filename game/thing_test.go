@@ -46,6 +46,7 @@ func TestThing(t *testing.T) {
 //save game
 	print("\tSaving a game\n")
 	g1.Name="Game 1"
+	g1.Rating=5
 	err = g1.Save();ec(t,"Save Game1",err)
 //Get a game
 	print("\tGetting a game\n")
@@ -53,6 +54,9 @@ func TestThing(t *testing.T) {
 	ec(t,"get game", err)
 	if g999.Name != "Game 1" {
 		t.Errorf("name doesn't match for g1,g999: "+g1.Name+"<=>"+g999.Name+"\n", err)
+	}
+	if g999.Rating != 5 {
+		t.Errorf("Rating doesn't match for g1, g999: %s <=> %s\n", g1.Rating, g999.Rating, err)
 	}
 
 //delete game
@@ -117,7 +121,6 @@ func TestThing(t *testing.T) {
 	sl,err := Search("metotestsearchi")
 	if len(sl) !=  1{t.Errorf("Len of Search() too short, expected 1 got" +u.Tostr(len(sl))+"\n") }
 
-
 }
 func vl(t *testing.T,s string, e interface{}, a interface{}) {
 	if e != a {
@@ -154,8 +157,8 @@ func initTest(t *testing.T)  {
     }
     DB(db)
 	_,err = db.Query("Drop table if exists things")
-	ec(t,"drop table gamecollection",err)
-	_,err = db.Query("CREATE TABLE `things` (  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,  `name` varchar(255) NOT NULL,  `parent_id` int(10) unsigned DEFAULT NULL,  `type` enum('console','game','manual','box') DEFAULT NULL,  PRIMARY KEY (`id`)) AUTO_INCREMENT=1;")
+	ec(t,"drop table things",err)
+	_,err = db.Query("CREATE TABLE `things` (  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,  `name` varchar(255) NOT NULL,  `parent_id` int(10) unsigned DEFAULT NULL,  `type` enum('console','game','manual','box') DEFAULT NULL, `rating` int unsigned DEFAULT NULL,  PRIMARY KEY (`id`)) AUTO_INCREMENT=1;")
 	ec(t,"create table things",err)
 
 	_,err = db.Query("Drop table if exists collection")

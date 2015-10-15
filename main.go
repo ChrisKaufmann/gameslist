@@ -217,6 +217,18 @@ func handleThing(w http.ResponseWriter, r *http.Request) {
 			glog.Errorf("handleThing: coll.Have(%s) (trying to toggle unowned)", t.ID)
 			return
 		}
+	case "setrating":
+		t, err := game.GetThing(id)
+		fmt.Printf("%s",t)
+		if err != nil { glog.Errorf("handleThing:game.GetThing(%s): %s", id, err)}
+	    rt := r.FormValue("rating")	
+		rating := u.Toint(rt)
+		fmt.Printf("rating: %v", rating)
+		if rating <1 || rating > 5 { glog.Errorf("Bad rating passed");return}
+		t.Rating=rating
+		t.Save()
+		tmpl,err := template.New("tmpl").Parse(`{{.}}`)
+		tmpl.Execute(w,t.StarContent())
 	}
 	fmt.Printf("HandleThing %v\n", time.Now().Sub(t0))
 }

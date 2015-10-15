@@ -62,8 +62,8 @@ func DB(d *sql.DB) {
 	}
 	userDB()
 }
-func init() {
-	c, err := goconfig.ReadConfigFile("config")
+func Config(config string) {
+	c, err := goconfig.ReadConfigFile(config)
 	if err != nil {
 		glog.Fatalf("init(): readconfigfile(config)")
 	}
@@ -142,8 +142,8 @@ func LoginToken(w http.ResponseWriter, r *http.Request,lt string)(err error) {
 	err = us.AddSession(authString)
 	if err != nil {glog.Errorf("LoginToken():us.AddSession(%s): %s", authString, err);return err }
 	expire := time.Now().AddDate(1,0,0)
-	cookie := http.Cookie{Name: cookieName, Value: authString, Expires: expire}
-	fmt.Printf("http.SetCookie(w,%s)",cookie)
+	cookie := http.Cookie{Name: cookieName, Value: authString, Expires: expire, Path: "/"}
+	fmt.Printf("http.SetCookie(w,%s)expore:%s",cookie,expire)
 	http.SetCookie(w, &cookie)
 	http.Redirect(w, r, "/main.html", http.StatusFound)
 	return err
@@ -215,10 +215,13 @@ func LoggedIn(w http.ResponseWriter, r *http.Request) (bool, int) {
 		return true, 1
 	}
 	cookie, err := r.Cookie(cookieName)
-	if err != nil {
-		//just means that the cookie doesn't exist or we couldn't read it
-		fmt.Printf("LoggedIn(): No cookie: %s", err)
-		return false, 0
+	switch {
+		case err == http.ErrNoCookie: // just means cookie doesn't exist or we couldn't read
+			fmt.Printf("Couldn't get cookie")
+			return false,0
+		case err != nil:
+			glog.Errorf("Loggedin() r.Cookie(%s): %s", cookieName, err)
+			return false,0
 	}
 	tokHash := cookie.Value
 	if !SessionExists(tokHash) {

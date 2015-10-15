@@ -96,3 +96,12 @@ function toggle_owned(id)
 		$('#div_thing_'+id).css("background-color", html);
 	}})
 }
+function setrating(id, rating)
+{
+	console.log("setrating:"+id+", rating:"+rating)
+	var data="action=setrating&rating="+rating
+	$.ajax({type: "POST", url: '/thing/'+id, data:data, success:function(html)
+	{
+		$('#star_container_'+id).html(html)
+	}})
+}

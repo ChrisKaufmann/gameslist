@@ -6,4 +6,5 @@
     <td ><input type="checkbox" id="checkbox-manual-{{.ID}}" {{ .ManualChecked }} onchange="save_change('{{.ManualID}}','checkbox-manual-{{.ID}}')"></td>
     <td><input type="checkbox" id="checkbox-box-{{.ID}}" {{ .BoxChecked }} onchange="save_change('{{.BoxID}}','checkbox-box-{{.ID}}')"></td>
 	</form>
+	<td><div id='star_container_{{.ID}}'>{{.StarContent}}</div></td>
 </tr>

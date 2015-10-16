@@ -80,7 +80,7 @@ func Config(config string) {
 	if err != nil {
 		glog.Fatalf("init(): readconfigfile(Web.url)")
 	}
-	oauthCfg.RedirectURL = url + "/oauth2callback"
+	oauthCfg.RedirectURL = url + "oauth2callback"
 }
 
 func HandleLogout(w http.ResponseWriter, r *http.Request) {

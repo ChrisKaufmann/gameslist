@@ -69,6 +69,7 @@ func init() {
 		glog.Fatalf("Init():sql.Open(mysql, %s:%s@%s/%s: %s", db_user, db_pass, db_host, db_name, err)
 	}
 	cookieName = "gameslist_auth_" + environment
+	auth.Config("config")
 	auth.CookieName(cookieName)
 	auth.Environment(environment)
 }

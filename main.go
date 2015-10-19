@@ -226,10 +226,12 @@ func handleThing(w http.ResponseWriter, r *http.Request) {
 		rating := u.Toint(rt)
 		fmt.Printf("rating: %v", rating)
 		if rating <1 || rating > 5 { glog.Errorf("Bad rating passed");return}
-		t.Rating=rating
-		t.Save()
+		err =t.SetRating(rating)
+		if err != nil {glog.Errorf("t.SetRating(%s): %s",rating,err) }
 		tmpl,err := template.New("tmpl").Parse(`{{.}}`)
-		tmpl.Execute(w,t.StarContent())
+		mtl := coll.MyThingsHash()
+		pt := game.GetPrintableThing(t,mtl)
+		tmpl.Execute(w,pt.StarContent())
 	}
 	fmt.Printf("HandleThing %v\n", time.Now().Sub(t0))
 }

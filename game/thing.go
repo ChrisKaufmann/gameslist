@@ -2,7 +2,6 @@ package game
 // things - games, consoles, boxes, manuals
 
 import (
-	"html/template"
 	"fmt"
 	"strings"
 	u "github.com/ChrisKaufmann/goutils"
@@ -11,14 +10,13 @@ import (
 	"database/sql"
 	"github.com/ChrisKaufmann/easymemcache"
 )
-const thingSelectString = " things.id,IFNULL(things.name,''),IFNULL(things.parent_id,0),IFNULL(things.type,''), things.rating "
+const thingSelectString = " things.id,IFNULL(things.name,''),IFNULL(things.parent_id,0),IFNULL(things.type,'') "
 
 type Thing struct {
 	ID			int
 	Name		string
 	ParentID	int		//if it's a manual, the game/console it's a manual for, for example
 	Type		string	//console,game,manual,box,review
-	Rating		int
 }
 var (
 	usemc			bool
@@ -39,11 +37,11 @@ var (
 func DB(d *sql.DB){
 	db=d
 	var err error
-	stmtSaveThing,err =u.Sth(db,"update things set name=?, type=?, parent_id=?, rating=? where id=? limit 1")
+	stmtSaveThing,err =u.Sth(db,"update things set name=?, type=?, parent_id=? where id=? limit 1")
 	if err != nil {glog.Fatalf("stmtSaveThing-u.Sth(db,'update things set name=?, type=?, parent_id=? where id=? limit 1'):%s",err)}
 	stmtDeleteThing,err = u.Sth(db, "delete from things where id=? limit 1")
 	if err != nil {glog.Fatalf("stmtDeleteThing-u.St(db,'delete from things where id=? limit 1'): %s", err)}
-	stmtGetGames, err = u.Sth(db, "select things.id,IFNULL(things.name,''),IFNULL(things.parent_id,''),things.type from things where type='game' and parent_id=? order by things.name ASC")
+	stmtGetGames, err = u.Sth(db, "select "+thingSelectString+"	from things where type='game' and parent_id=? order by things.name ASC")
 	if err != nil {glog.Fatalf("stmtGetGames-u.Sth(db'select things.id,IFNULL(things.name,''),IFNULL(things.parent_id,''),things.type from things where type='game' and parent_id=? order by things.name ASC'):%s", err)}
 	stmtGetBox, err = u.Sth(db, "select "+thingSelectString+" from things where type='box' and parent_id=?")
 	if err != nil {glog.Fatalf("stmtGetBox-u.Sth(db,'select "+thingSelectString+" from things where type='box' and parent_id=?): %s", err)}
@@ -61,6 +59,7 @@ func DB(d *sql.DB){
 	if err != nil {glog.Fatalf("stmtGetAllThings-u.Sth(db,'select "+thingSelectString+" from things where 1'): %s", err) }
 	stmtHaveThing, err = u.Sth(db,"select count(*) from collection where thing_id=? and user_id=?")
 	if err != nil {glog.Fatalf("stmtHaveThing-u.Sth(db,'select count(*) from collection where thing_id=? and user_id=?'): %s", err) }
+	ratingDB(db)
 }
 func MemCache(nmc *easymemcache.Client) () {
 	mc=nmc
@@ -69,7 +68,7 @@ func MemCache(nmc *easymemcache.Client) () {
 
 // object functions
 func (t Thing)String() string {
-	return fmt.Sprintf("ID: %v,Name: %s, Type: %s, ParentID: %v, Rating: %v", t.ID, t.Name,t.Type,t.ParentID,t.Rating)
+	return fmt.Sprintf("ID: %v,Name: %s, Type: %s, ParentID: %v, ", t.ID, t.Name,t.Type,t.ParentID)
 }
 func (t Thing)Print() {
 	fmt.Println(t)
@@ -84,7 +83,7 @@ func (t Thing)Save() (err error){
 		err=errors.New("no type in thing")
 		return err
 	}
-	_,err = stmtSaveThing.Exec(t.Name,t.Type,t.ParentID,t.Rating,t.ID)
+	_,err = stmtSaveThing.Exec(t.Name,t.Type,t.ParentID,t.ID)
 	if err != nil {glog.Errorf("thing.Save()-stmtSaveThing.Exec(%s,%s,%s,%s): %s",t.Name,t.Type,t.ParentID,t.ID, err) }
 	return err
 }
@@ -134,18 +133,6 @@ func (console Thing)AddGame(n string)(nt Thing, err error) {
 	if usemc {	mc.DeleteLike("games_") }
 	return nt, err
 }
-func (t Thing) HasStar(i int) (string) {
-	if t.Rating >= i {return "static/star_on.png"}
-	return "static/star_off.png"
-}
-func (t Thing) StarContent()(template.HTML) {
-	var r string
-	for i:=1;i<=5;i++{
-		s := fmt.Sprintf("<img id='star_%v_%v' src='%v' onclick='setrating(%v,%v)' onmouseover='showstars(%v,%v)'>",t.ID,i,t.HasStar(i),t.ID,i,t.ID,i)
-		r = r +" "+s
-	}
-	return template.HTML(r)
-}
 //non object functions down here
 func Search(ss string) (tl []Thing, err error) {
 	stmtSearch, err := u.Sth(db, "select "+thingSelectString+" from things where name like '%"+ss+"%' and type in('game','console');")
@@ -184,7 +171,7 @@ func getThingsFromSthPP(stmt *sql.Stmt,ip interface{},pp interface{}) (tl []Thin
 	}
 	for rows.Next() {
 		var t Thing
-		rows.Scan(&t.ID, &t.Name, &t.ParentID, &t.Type, &t.Rating)
+		rows.Scan(&t.ID, &t.Name, &t.ParentID, &t.Type)
 		tl = append(tl, t)
 	}
 	return tl, err
@@ -198,7 +185,7 @@ func getThingsFromSthP(stmt *sql.Stmt,ip interface{}) (tl []Thing, err error) {
 	}
 	for rows.Next() {
 		var t Thing
-		rows.Scan(&t.ID, &t.Name, &t.ParentID, &t.Type, &t.Rating)
+		rows.Scan(&t.ID, &t.Name, &t.ParentID, &t.Type)
 		tl = append(tl, t)
 	}
 	return tl, err
@@ -211,7 +198,7 @@ func getThingsFromSth(stmt *sql.Stmt) (tl []Thing, err error) {
 	}
 	for rows.Next() {
 		var t Thing
-		rows.Scan(&t.ID, &t.Name, &t.ParentID, &t.Type, &t.Rating)
+		rows.Scan(&t.ID, &t.Name, &t.ParentID, &t.Type)
 		tl = append(tl, t)
 	}
 	return tl, err

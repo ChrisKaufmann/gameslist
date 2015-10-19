@@ -1,5 +1,3 @@
-delete from things where name='Sega Genesis';
-insert into things (name,type) values ('Sega Genesis', 'console');
 delete t.* from things t where parent_id in (select id from ( select id from things where name='Sega Genesis') x );
 insert into things (name, parent_id, type) select '3 Ninjas Kick Back', id, 'game' from things where name='Sega Genesis';
 insert into things (name, parent_id, type) select '6-Pak', id, 'game' from things where name='Sega Genesis';

@@ -33,7 +33,10 @@ func (coll Collection) Have (t Thing) (h bool) {
 	h=false
 	var c int
 	err := stmtHaveThing.QueryRow(t.ID,coll.UserID).Scan(&c)
-	if err != nil {err.Error();fmt.Println(err);return h}
+	if err != nil {
+		glog.Errorf("stmtHaveThing.QueryRow(%v,%v): %s", t.ID, coll.UserID, err)
+		return h
+	}
 	if c > 0 {
 		return true
 	}
@@ -41,15 +44,18 @@ func (coll Collection) Have (t Thing) (h bool) {
 }
 func (coll Collection) Add(t Thing) (err error) {
 	stmt,err := u.Sth(db,"insert into collection (user_id, thing_id) values (?,?)")
-	if err != nil {err.Error();fmt.Println(err);return err}
+	if err != nil {
+		glog.Errorf("u.Sth(): %s", err)
+		return err
+	}
 	_, err = stmt.Exec(coll.UserID,t.ID)
+	if err != nil { glog.Errorf("stmt.Exec(%v,%v): %s", coll.UserID, t.ID, err) }
 	return err
 }
 func (coll Collection) Delete(t Thing) (err error) {
 	stmt, err := u.Sth(db, "delete from collection where user_id=? and thing_id=? limit 1")
 	_, err = stmt.Exec(coll.UserID, t.ID)
-	if err != nil {err.Error();fmt.Println(err);return err}
-	print("Deleted "+u.Tostr(t.ID))
+	if err != nil {glog.Errorf("stmt.Exec(%v,%v): %s", coll.UserID, t.ID, err) }
 	return err
 }
 // Console stuff
@@ -162,7 +168,7 @@ func (coll Collection) ConsoleSelect() (t template.HTML) {
     cl, err := GetAllConsoles()
 	var s string
     if err != nil {
-        err.Error();print(err)
+		glog.Errorf("err: %s", err)
     }
     for _,c := range cl {
         s = s+"<option value='"+u.Tostr(c.ID)+"'>"+c.Name+"\n"

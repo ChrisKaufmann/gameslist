@@ -3,6 +3,8 @@ package game
 
 import (
 	"github.com/golang/glog"
+	"html/template"
+	"fmt"
 )
 const hasbg string = "#c0c0c0"
 
@@ -42,6 +44,18 @@ func (t PrintableThing) BoxChecked() (string) {
 	if t.HasBox {return "checked"}
 	return "unchecked"
 }
+func (m PrintableThing) HasStar(i int) (string) {
+    if m.Rating() >= i {return "static/star_on.png"}
+    return "static/star_off.png"
+}
+func (m PrintableThing) StarContent()(template.HTML) {
+    var r string
+    for i:=1;i<=5;i++{
+        s := fmt.Sprintf("<img id='star_%v_%v' src='%v' onclick='setrating(%v,%v)' onmouseover='showstars(%v,%v)'>",m.ID,i,m.HasStar(i),m.ID,i,m.ID,i)
+        r = r +" "+s
+    }
+    return template.HTML(r)
+}
 
 // object functions
 func (m MyThing) HasManual() (h bool) {
@@ -52,7 +66,6 @@ func (m MyThing) HasBox() (h bool) {
 	box := m.Box()
 	return m.Coll.Have(box)
 }
-
 // non object functions
 func GetPrintableThings(tl []Thing, ph map[int]bool) (ptl []PrintableThing) {
 	allthings, err := GetAllThings()
@@ -72,4 +85,10 @@ func GetPrintableThings(tl []Thing, ph map[int]bool) (ptl []PrintableThing) {
 		ptl = append(ptl, pt)
 	}
 	return ptl
+}
+func GetPrintableThing(t Thing, ph map[int]bool) (pt PrintableThing) {
+	var tl []Thing
+	tl = append(tl,t)
+	ptl := GetPrintableThings(tl,ph)
+	return ptl[0]
 }

@@ -30,7 +30,6 @@ var (
 	stmtGetAllConsoles *sql.Stmt
 	stmtGetAllGames *sql.Stmt
 	stmtGetAllThings *sql.Stmt
-	stmtHaveThing	*sql.Stmt
 	db				*sql.DB
 	mc				*easymemcache.Client
 )
@@ -57,9 +56,9 @@ func DB(d *sql.DB){
 	if err != nil {glog.Fatalf("stmtGetThing-u.Sth(db,'select "+thingSelectString+" from things where id= ?'): %s", err) }
 	stmtGetAllThings,err = u.Sth(db,"select "+thingSelectString+" from things where 1")
 	if err != nil {glog.Fatalf("stmtGetAllThings-u.Sth(db,'select "+thingSelectString+" from things where 1'): %s", err) }
-	stmtHaveThing, err = u.Sth(db,"select count(*) from collection where thing_id=? and user_id=?")
-	if err != nil {glog.Fatalf("stmtHaveThing-u.Sth(db,'select count(*) from collection where thing_id=? and user_id=?'): %s", err) }
 	ratingDB(db)
+	reviewDB(db)
+	collectionDB(db)
 }
 func MemCache(nmc *easymemcache.Client) () {
 	mc=nmc
@@ -69,9 +68,6 @@ func MemCache(nmc *easymemcache.Client) () {
 // object functions
 func (t Thing)String() string {
 	return fmt.Sprintf("ID: %v,Name: %s, Type: %s, ParentID: %v, ", t.ID, t.Name,t.Type,t.ParentID)
-}
-func (t Thing)Print() {
-	fmt.Println(t)
 }
 func (t Thing)Save() (err error){
 	if t.ID < 1 || t.ID != int(t.ID){

@@ -1,4 +1,6 @@
-create table ratings (
-	thing_id int unsigned not null primary key, 
-	rating int unsigned default 0)
-;
+CREATE TABLE `ratings` (
+	`thing_id` int(10) unsigned NOT NULL,
+	`user_id` int(10) unsigned NOT NULL,
+	`rating` int(10) unsigned DEFAULT '0',
+	PRIMARY KEY (`thing_id`)
+);

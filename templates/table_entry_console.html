@@ -1,10 +1,28 @@
 <tr>
+	<td colspan=3 text-align=left>
+		<div id='console_div_{{ .ID }}' onclick='$("#thing_detail_{{.ID}}").toggle()'>
+			<h2>{{ .Name }}</h2>
+		</div>
+	</td>
+	<td><div id='console_total_{{.ID}}' onclick="show_games('{{.ID}}')">{{.ConsoleOwned}}/{{.ConsoleTotal}}</div>
+		</div>
+	</td>
+</tr>
+<tr id='thing_detail_{{.ID}}' style='display:none;'>
 	<form name="coll_{{.ID}}">
-	<td colspan=3 align=left><div id='console_div_{{ .ID }}' onclick="show_games('{{.ID}}')"><h2>{{ .Name }}</h2></div></td>
-	<td></td>
-	<td ><input type="checkbox" id="checkbox-{{.ID}}" {{ .Checked }} onchange="save_change({{.ID}},'checkbox-{{.ID}}')"></td>
-	<td ><input type="checkbox" id="checkbox-manual-{{.ID}}" {{ .ManualChecked }} onchange="save_change('{{.Manual.ID}}','checkbox-manual-{{.ID}}')"></td>
-	<td><input type="checkbox" id="checkbox-box-{{.ID}}" {{ .BoxChecked }} onchange="save_change('{{.Box.ID}}','checkbox-box-{{.ID}}')"></td>
-	</form>
-	<td><div id='star_container_{{.ID}}'>{{.StarContent}}</div></td>
+	<td colspan=6>
+		<table>
+			<tr>
+				<td>Has</td><td><input type="checkbox" id="checkbox-{{.ID}}" {{ .Checked }} onchange="save_change({{.ID}},'checkbox-{{.ID}}')"></td>
+			</tr>
+			<tr>
+				<td>Manual</td><td><input type="checkbox" id="checkbox-manual-{{.ID}}" {{ .ManualChecked }} onchange="save_change('{{.Manual.ID}}','checkbox-manual-{{.ID}}')"></td>
+			</tr>
+			<tr>
+				<td>Box</td><td><input type="checkbox" id="checkbox-box-{{.ID}}" {{ .BoxChecked }} onchange="save_change('{{.Box.ID}}','checkbox-box-{{.ID}}')"></td>
+			</tr>
+			</form>
+		<td>Rating</td><td><div id='star_container_{{.ID}}'>{{.StarContent}}</div></td>
+	</table>
+	</td>
 </tr>

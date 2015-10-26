@@ -46,7 +46,6 @@ func TestThing(t *testing.T) {
 //save game
 	print("\tSaving a game\n")
 	g1.Name="Game 1"
-	g1.Rating=5
 	err = g1.Save();ec(t,"Save Game1",err)
 //Get a game
 	print("\tGetting a game\n")
@@ -54,9 +53,6 @@ func TestThing(t *testing.T) {
 	ec(t,"get game", err)
 	if g999.Name != "Game 1" {
 		t.Errorf("name doesn't match for g1,g999: "+g1.Name+"<=>"+g999.Name+"\n", err)
-	}
-	if g999.Rating != 5 {
-		t.Errorf("Rating doesn't match for g1, g999: %s <=> %s\n", g1.Rating, g999.Rating, err)
 	}
 
 //delete game
@@ -165,4 +161,14 @@ func initTest(t *testing.T)  {
 	ec(t,"drop table collection",err)
 	_,err = db.Query("create table collection ( id int unsigned not null primary key auto_increment, user_id int unsigned not null, thing_id int unsigned not null) AUTO_INCREMENT=1;")
 	ec(t,"create table collection",err)
+
+	_,err = db.Query("drop table if exists ratings")
+	ec(t,"drop table ratings", err)
+	_, err = db.Query("create table ratings (thing_id int unsigned not null primary key, user_id int unsigned not null, rating int unsigned default 0);")
+	ec(t,"create table ratings", err)
+
+	_, err = db.Query("drop table if exists reviews")
+	ec(t,"drop table reviews",err)
+	_, err = db.Query("create table reviews(thing_id int unsigned not null, user_id int unsigned not null, review text);")
+	ec(t,"create table reviews", err)
 }

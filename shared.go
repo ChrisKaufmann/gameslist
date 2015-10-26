@@ -33,12 +33,11 @@ func handleShared(w http.ResponseWriter, r *http.Request) {
 	cl, err := coll.Things()
 	if err != nil {glog.Errorf("handleShared - coll.Things(): %s", err); return}
 
-	mtl := coll.MyThingsHash()
-	mttl := game.GetPrintableThings(cl, mtl)
+	mttl := coll.GetMyThings(cl)
 	ShareMain.Execute(w,nil)
 	fmt.Fprintf(w,"<table>")
 	fmt.Fprintf(w,"<tr><td colspan=2><a name='sym'></a>Console</td><td align=right>Game</td><td>?</td><td>Man</td><td>Box</td></tr>")
-	for _, myc := range game.GetPrintableThings(cons, mtl) {
+	for _, myc := range coll.GetMyThings(cons) {
 		ReadTableEntryConsole.Execute(w,myc)
 		for _,t := range mttl {
 			if t.ParentID == myc.ID {

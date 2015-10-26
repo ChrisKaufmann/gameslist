@@ -3,6 +3,7 @@ package main
 import (
 	"./auth"
 	"./game"
+	"sort"
 	"flag"
 	"database/sql"
 	"strings"
@@ -86,7 +87,6 @@ func main() {
 	http.HandleFunc("/logout", auth.HandleLogout)
 	http.HandleFunc("/login/", handleLogin)
 	http.HandleFunc("/list", handleList)
-	http.HandleFunc("/list/consoles", handleConsoleList)
 	http.HandleFunc("/list/games", handleGameList)
 	http.HandleFunc("/list/collection", handleMyCollection)
 	http.HandleFunc("/toggle/consoles", handleConsolesToggle)
@@ -184,13 +184,13 @@ func handleThing(w http.ResponseWriter, r *http.Request) {
 		glog.Errorf("handleThing();game.GetCollection(%s): %s", userID, err)
 		return
 	}
+	t, err := game.GetThing(id)
+	if err != nil {
+		glog.Errorf("handleThing:game.GetThing(%s): %s", id, err)
+		return
+	}
 	switch action {
 	case "toggle":
-		t, err := game.GetThing(id)
-		if err != nil {
-			glog.Errorf("handleThing:game.GetThing(%s): %s", id, err)
-			return
-		}
 		if coll.Have(t) {
 			err = coll.Delete(t)
 			if err != nil {
@@ -204,34 +204,25 @@ func handleThing(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "#aaffa5")
 		}
 	case "have":
-		t, err := game.GetThing(id)
-		if err != nil {
-			glog.Errorf("handleThing:game.GetThing(%s): %s", id, err)
-			return
-		}
 		err = coll.Add(t)
 		if err != nil {glog.Errorf("handleThing()coll.Add(%s): %s", t.ID, err);return}
 	case "have_not":
-		t, err := game.GetThing(id)
 		err = coll.Delete(t)
 		if err != nil {
 			glog.Errorf("handleThing: coll.Have(%s) (trying to toggle unowned)", t.ID)
 			return
 		}
 	case "setrating":
-		t, err := game.GetThing(id)
-		fmt.Printf("%s",t)
-		if err != nil { glog.Errorf("handleThing:game.GetThing(%s): %s", id, err)}
-	    rt := r.FormValue("rating")	
-		rating := u.Toint(rt)
-		fmt.Printf("rating: %v", rating)
+	    rating := u.Toint(r.FormValue("rating"))
 		if rating <1 || rating > 5 { glog.Errorf("Bad rating passed");return}
-		err =t.SetRating(rating)
-		if err != nil {glog.Errorf("t.SetRating(%s): %s",rating,err) }
 		tmpl,err := template.New("tmpl").Parse(`{{.}}`)
-		mtl := coll.MyThingsHash()
-		pt := game.GetPrintableThing(t,mtl)
-		tmpl.Execute(w,pt.StarContent())
+		pt := coll.GetMyThing(t)
+		err =pt.SetRating(rating)
+		if err != nil {glog.Errorf("t.SetRating(%s): %s",rating,err) }
+		tmpl.Execute(w,coll.GetMyThing(t).StarContent())
+	case "get_review_html":
+		return
+
 	}
 	fmt.Printf("HandleThing %v\n", time.Now().Sub(t0))
 }
@@ -251,50 +242,6 @@ func handleGamesToggle(w http.ResponseWriter, r *http.Request) {
 	GamesToggle.Execute(w, nil)
 	fmt.Printf("handleGamesToggle %v\n", time.Now().Sub(t0))
 	return
-}
-func handleConsoleList(w http.ResponseWriter, r *http.Request) {
-	t0 := time.Now()
-	loggedin, userID := auth.LoggedIn(w, r)
-	if !loggedin {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
-	coll, err := game.GetCollection(userID)
-	if err != nil {
-		glog.Errorf("handleConsoleList()game.GetCollection(%s): %s",userID,err)
-		return
-	}
-	var cons []game.Thing
-	switch r.FormValue("filter") {
-	case "all":
-		cons, err = game.GetAllConsoles()
-		if err != nil {
-			glog.Errorf("handleConsoleList().game.GetAllConsoles(): %s", err)
-			return
-		}
-	case "missing":
-		cons, err = coll.MissingConsoles()
-		if err != nil {
-			glog.Errorf("handleConsoleList().coll.MisingConsoles(): %s", err)
-			return
-		}
-	default:
-		cons, err = coll.Consoles()
-		if err != nil {
-			glog.Errorf("handleConsoleList().coll.Consoles(): %s", err)
-			return
-		}
-	}
-	fmt.Fprintf(w, "<table>")
-
-	ptl := game.GetPrintableThings(cons,coll.MyThingsHash())
-	for _, c := range ptl {
-		ListEntryHtml.Execute(w, c)
-	}
-	fmt.Fprintf(w, "<tr><td colspan=3>")
-	fmt.Fprintf(w, "</td></tr>")
-	fmt.Fprintf(w, "</table>")
-	fmt.Printf("handleConsoleList %v\n", time.Now().Sub(t0))
 }
 func handleGameList(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
@@ -462,19 +409,20 @@ func handleMyCollection(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("handleMyCollection %v\n", time.Now().Sub(t0))
 }
 func PrintListOfThings(w http.ResponseWriter,coll game.Collection,tl []game.Thing) {
-	mtl := coll.MyThingsHash()
 	cons, err := game.GetAllConsoles()
 	if err != nil {glog.Errorf("PrintListOfThings-game.GetAllConsoles(): %s", err) ;return}
 	fmt.Fprintf(w,"<table id='data_table'>")
 	fmt.Fprintf(w,"<tr><td colspan=2><a name='sym'></a>Console</td><td></td><td align=right>Game</td><td id='gh_td'>?</td><td id='man_td'>Man</td><td id='box_td'>Box</td></tr>")
 	curr := "9"
-	pttl := game.GetPrintableThings(tl, mtl)
-	for _, myc := range game.GetPrintableThings(cons, mtl) {
+	pttl := coll.GetMyThings(tl)
+	sort.Sort(game.ByName(pttl))
+	for _, myc := range coll.GetMyThings(cons) {
 		TableEntryConsoleHTML.Execute(w,myc)
 		for _, t := range pttl {
+			//The fc stuff is for printing an anchor 
 			fc := strings.ToUpper(t.Name[0:1])
 			if fc > curr {
-				fmt.Fprintf(w,"<tr'><td><a name='"+fc+"' id='"+fc+"'></a></td></tr>\n")
+				fmt.Fprintf(w,"<tr><td><a name='"+fc+"' id='"+fc+"'></a></td></tr>\n")
 				curr = fc
 			}
 			if t.ParentID == myc.ID {

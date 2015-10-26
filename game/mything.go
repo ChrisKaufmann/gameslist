@@ -2,53 +2,62 @@ package game
 // MyThing
 
 import (
-	"github.com/golang/glog"
 	"html/template"
 	"fmt"
+	"github.com/golang/glog"
 )
 const hasbg string = "#c0c0c0"
 
 type MyThing struct {
 	Thing
 	Coll Collection
-}
-type PrintableThing struct {
-	Thing
 	HasManual bool
 	Has bool
 	HasBox bool
 	ManualID int
 	BoxID int
+	rating int
+	review string
 }
-func (t PrintableThing) Background() (string) {
+func (t MyThing) Background() (string) {
 	if t.Has {return hasbg}
 	return "white"
 }
-func (t PrintableThing) BoxBackground() (string) {
+func (t MyThing) BoxBackground() (string) {
 	if t.HasBox {return hasbg}
 	return "white"
 }
-func (t PrintableThing) ManualBackground() (string) {
+func (t MyThing) ManualBackground() (string) {
 	if t.HasManual {return hasbg}
 	return "white"
 }
-func (t PrintableThing) Checked() (string) {
+func (t MyThing) Checked() (string) {
 	if t.Has {return "checked"}
 	return "unchecked"
 }
-func (t PrintableThing) ManualChecked() (string) {
+func (t MyThing) ManualChecked() (string) {
 	if t.HasManual {return "checked"}
 	return "unchecked"
 }
-func (t PrintableThing) BoxChecked() (string) {
+func (t MyThing) BoxChecked() (string) {
 	if t.HasBox {return "checked"}
 	return "unchecked"
 }
-func (m PrintableThing) HasStar(i int) (string) {
-    if m.Rating() >= i {return "static/star_on.png"}
+func (t MyThing) HasStar(i int) (string) {
+    if t.rating >= i {return "static/star_on.png"}
     return "static/star_off.png"
 }
-func (m PrintableThing) StarContent()(template.HTML) {
+func (t MyThing) ConsoleTotal() (int) {
+	gl, err := t.Games()
+	if err != nil {glog.Errorf("t.Games(): %s", err) }
+	return len(gl)
+}
+func (t MyThing) ConsoleOwned() (int) {
+	gl, err := t.Coll.ConsoleGames(t.Thing)
+	if err != nil {glog.Errorf("coll.ConsoleGames(%s): %s", t.Thing, err) }
+	return len(gl)
+}
+func (m MyThing) StarContent()(template.HTML) {
     var r string
     for i:=1;i<=5;i++{
         s := fmt.Sprintf("<img id='star_%v_%v' src='%v' onclick='setrating(%v,%v)' onmouseover='showstars(%v,%v)'>",m.ID,i,m.HasStar(i),m.ID,i,m.ID,i)
@@ -57,38 +66,11 @@ func (m PrintableThing) StarContent()(template.HTML) {
     return template.HTML(r)
 }
 
-// object functions
-func (m MyThing) HasManual() (h bool) {
-	man := m.Manual()
-	return m.Coll.Have(man)
-}
-func (m MyThing) HasBox() (h bool) {
-	box := m.Box()
-	return m.Coll.Have(box)
-}
 // non object functions
-func GetPrintableThings(tl []Thing, ph map[int]bool) (ptl []PrintableThing) {
-	allthings, err := GetAllThings()
-	if err != nil {glog.Errorf("GetPrintableThings-GetAllThings(): %s", err) }
-	tms := make(map[int]int)
-	tbs := make(map[int]int)
-	//make a hash of all manuals and boxes
-	for _,t := range allthings {
-		if t.Type=="manual" {tms[t.ParentID]=t.ID}
-		if t.Type=="box" {tbs[t.ParentID]=t.ID}
-	}
-	for _, t := range tl {
-		pt := PrintableThing{t,false,false,false,tms[t.ID],tbs[t.ID]}
-		if ph[t.ID] {pt.Has = true }
-		if ph[tms[t.ID]] {pt.HasManual = true }
-		if ph[tbs[t.ID]] {pt.HasBox = true }
-		ptl = append(ptl, pt)
-	}
-	return ptl
-}
-func GetPrintableThing(t Thing, ph map[int]bool) (pt PrintableThing) {
-	var tl []Thing
-	tl = append(tl,t)
-	ptl := GetPrintableThings(tl,ph)
-	return ptl[0]
-}
+
+
+//for sorting
+type ByName []MyThing
+func (a ByName) Len() int			{return len(a)}
+func (a ByName) Swap(i, j int)		{a[i], a[j] = a[j],a[i]}
+func (a ByName) Less(i, j int) bool	{return a[i].Name < a[j].Name }

@@ -222,6 +222,13 @@ func handleThing(w http.ResponseWriter, r *http.Request) {
 		tmpl.Execute(w,coll.GetMyThing(t).StarContent())
 	case "get_review_html":
 		return
+	case "setreview":
+		review :=r.FormValue("review")
+		tmpl, err := template.New("tmpl").Parse("{{.}}")
+		pt := coll.GetMyThing(t)
+		err = pt.SetReview(review)
+		if err != nil {glog.Errorf("t.SetReview(%s): %s", review, err) }
+		tmpl.Execute(w,coll.GetMyThing(t).Review())
 
 	}
 	fmt.Printf("HandleThing %v\n", time.Now().Sub(t0))
@@ -412,7 +419,6 @@ func PrintListOfThings(w http.ResponseWriter,coll game.Collection,tl []game.Thin
 	cons, err := game.GetAllConsoles()
 	if err != nil {glog.Errorf("PrintListOfThings-game.GetAllConsoles(): %s", err) ;return}
 	fmt.Fprintf(w,"<table id='data_table'>")
-	fmt.Fprintf(w,"<tr><td colspan=2><a name='sym'></a>Console</td><td></td><td align=right>Game</td><td id='gh_td'>?</td><td id='man_td'>Man</td><td id='box_td'>Box</td></tr>")
 	curr := "9"
 	pttl := coll.GetMyThings(tl)
 	sort.Sort(game.ByName(pttl))

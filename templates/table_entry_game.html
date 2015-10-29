@@ -4,24 +4,24 @@
 </tr>
 <tr id='thing_detail_{{.ID}}' style='display:none;' align=right>
 	<form name="coll_{{.ID}}">
-	<td colspan=6 text-align=right>
+	<td  colspan=2 text-align=left>
 		<table>
 			<tr>
 			</tr>
 			<tr>
-			    <td>Manual:</td><td><input type="checkbox" id="checkbox-manual-{{.ID}}" {{ .ManualChecked }} onchange="save_change('{{.ManualID}}','checkbox-manual-{{.ID}}')"></td>
+			    <td><h4>Manual:</h4></td><td><input type="checkbox" id="checkbox-manual-{{.ID}}" {{ .ManualChecked }} onchange="save_change('{{.ManualID}}','checkbox-manual-{{.ID}}')"></td>
 			</tr>
 			<tr>
-			    <td>Box</td><td><input type="checkbox" id="checkbox-box-{{.ID}}" {{ .BoxChecked }} onchange="save_change('{{.BoxID}}','checkbox-box-{{.ID}}')"></td>
+			    <td><h4>Box</h4></td><td><input type="checkbox" id="checkbox-box-{{.ID}}" {{ .BoxChecked }} onchange="save_change('{{.BoxID}}','checkbox-box-{{.ID}}')"></td>
 			</tr>
 			<tr>
-				<td>Rating</td><td><div id='star_container_{{.ID}}'>{{.StarContent}}</div></td>
+				<td><h4>Rating</h4></td><td><div id='star_container_{{.ID}}'>{{.StarContent}}</div></td>
 			</tr>
 			<tr>
-				<td>Condition</td><td>tbd</td>
+				<td><h4>Condition</h4></td><td>tbd</td>
 			</tr>
 			<tr>
-				<td><p onclick="enable_review({{.ID}})">Review</p></td><td><div id='div_review_{{.ID}}'><p onclick="enable_review({{.ID}})">{{.Review}}</p></div></td>
+				<td><p onclick="enable_review({{.ID}})"><h4>Review</h4></p></td><td><div id='div_review_{{.ID}}'><p onclick="enable_review({{.ID}})">{{.Review}}</p></div></td>
 			</tr>
 		</table>
 	</td>

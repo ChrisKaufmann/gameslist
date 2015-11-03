@@ -59,6 +59,7 @@ func DB(d *sql.DB){
 	ratingDB(db)
 	reviewDB(db)
 	collectionDB(db)
+	conditionDB(db)
 }
 func MemCache(nmc *easymemcache.Client) () {
 	mc=nmc

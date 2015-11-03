@@ -56,6 +56,7 @@ div.toggle {
   and (max-device-width: 480px)
   and (-webkit-min-device-pixel-ratio: 2) {
      .fonts {font-size: 75%;}
+     h4 { font-size : 4vw; }
      h3 { font-size : 5vw; }
 	 h2 { font-size : 6vw; }
      #home_img { height:6vw; width:6vw }
@@ -94,6 +95,7 @@ div.toggle {
   and (max-device-width: 568px)
   and (-webkit-min-device-pixel-ratio: 2) {
      .fonts {font-size: 75%;}
+     h4 { font-size : 4vw; }
      h3 { font-size : 5vw; }
 	 h2 { font-size : 6vw; }
      #home_img { height:6vw; width:6vw }
@@ -132,6 +134,7 @@ div.toggle {
   and (max-device-width: 667px) 
   and (-webkit-min-device-pixel-ratio: 2) { 
      .fonts {font-size: 75%;}
+     h4 { font-size : 4vw; }
      h3 { font-size : 5vw; }
 	 h2 { font-size : 6vw; }
      #home_img { height:6vw; width:6vw }
@@ -171,6 +174,7 @@ div.toggle {
   and (max-device-width: 736px) 
   and (-webkit-min-device-pixel-ratio: 3) { 
      .fonts {font-size: 75%;}
+	 h4 { font-size : 4vw; }
      h3 { font-size : 5vw; }
 	 h2 { font-size : 6vw; }
 	 .sidebar {font-size : 3em; }
@@ -186,7 +190,7 @@ div.toggle {
 	 #add_game_select {height: 5vw; }
 	 #add_console_text { height:10vw; width:75vw; font-size:7vw; }
 	 #add_game_text { height:10vw; width:60vw;font-size:7vw; }
-	 input[type=checkbox] { transform: scale(3); -webkit-transform: scale(3); }
+	 input[type=checkbox] { transform: scale(4); -webkit-transform: scale(3); }
 	 input[type=button] {transform: scale(2); -webkit-transform: scale(2); }
 	 input[type=select] {transform: scale(2); -webkit-transform: scale(2); }
 }

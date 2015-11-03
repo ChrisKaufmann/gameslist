@@ -33,8 +33,8 @@ func ratingDB(d *sql.DB) {
 		glog.Errorf("sth(%s): %s", sgur, err)
 	}
 }
-func (t Thing) Rating(uid int) (r int) {
-	err := stmtGetRating.QueryRow(t.ID).Scan(&r)
+func (t MyThing) Rating() (r int) {
+	err := stmtGetRating.QueryRow(t.ID,t.Coll.UserID).Scan(&r)
 	switch {
 	case err == sql.ErrNoRows:
 		return 0

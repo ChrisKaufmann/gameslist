@@ -85,23 +85,28 @@ func TestThing(t *testing.T) {
 	print("\tGetManual(game.Manual()\n")
 	m2 := g4.Manual();if err!=nil {t.Errorf("g4.Manual()", err)}
 	if m2.Type != "manual" {t.Errorf("m2.Manual, expected 'manual, got: "+m2.Type, err)}
+
 //Get a manual that shouldn't exist
 	print("\tGetManual(game.manual()- not pre-existing)\n")
 	m3 := g1.Manual();if err!=nil {t.Errorf("g1.Manual", err)}
 	if m3.ParentID != g1.ID {t.Errorf("m3.ParentID, Expected:"+u.Tostr(g1.ID)+", Got:"+u.Tostr(m3.ParentID)+"\n", err)}
+
 //add a box 
 	print("\tAdd Box\n")
 	b1,err := AddThing("Game 4 Box", "box");if err!=nil {t.Errorf("AddThing(game4box)", err)}
 	b1.ParentID=g4.ID
 	err = b1.Save();if err!=nil {t.Errorf("b1.Save()", err)}
-//Get a manual that was already added, from a game
+
+//Get a Box that was already added, from a game
 	print("\tGetBox(game.Box()\n")
 	b2 := g4.Box();if err!=nil {t.Errorf("g4.Box()", err)}
 	if b2.Type != "box" {t.Errorf("m2.Box, expected 'box, got: "+b2.Type, err)}
-//Get a manual that shouldn't exist
+
+//Get a Box that shouldn't exist
 	print("\tGetBox(game.box()- not pre-existing)\n")
 	b3 := g1.Box();if err!=nil {t.Errorf("g1.Box", err)}
 	if b3.ParentID != g1.ID {t.Errorf("b3.ParentID, Expected:"+u.Tostr(g1.ID)+", Got:"+u.Tostr(b3.ParentID)+"\n", err)}
+
 //Add a game, specifically
 	print("\tAddGame()\n")
 	g1count,err := c1.Games()
@@ -110,12 +115,45 @@ func TestThing(t *testing.T) {
 	if err != nil {t.Errorf("c1.AddGame()")}
 	g2count,err := c1.Games()
 	if len(g2count) != (len(g1count)+1) {t.Errorf("Len of g1.Games() is wrong") }
+
 //Search
 	print("\tSearch()\n")
 	_,err = c1.AddGame("gametotestsearching")
 	if err != nil {t.Errorf("c1.AddGame('gametotestsearching')")}
 	sl,err := Search("metotestsearchi")
 	if len(sl) !=  1{t.Errorf("Len of Search() too short, expected 1 got" +u.Tostr(len(sl))+"\n") }
+
+//GetAllThings
+	print("\tGetAllThings()\n")
+	atl, err := GetAllThings()
+	if err != nil {t.Errorf("GetAllThings: %s", err) }
+	if len(atl) != 13 {
+		t.Errorf("Len of GetAllThings() too short, expected 13, got %v", len(atl))
+	}
+
+//getThingsByParam
+	print("\tGetThingsByParam()\n")
+	tl, err := getThingsByParam("1")
+	if err != nil {t.Errorf("getThingsByParam('1'): %s", err)}
+	if len(tl) != 13 {
+		t.Errorf("GetThingsByParam('1'): expected 13, got %v", len(tl))
+	}
+//getThingsFromSth
+	print("\tGetThingsFromSth()\n")
+	gtfsthq := "select things.id,IFNULL(things.name,''),IFNULL(things.parent_id,0),IFNULL(things.type,'') from things where 1"
+	stmt, err := u.Sth(db, gtfsthq)
+	if err != nil {t.Errorf("u.Sth(%s): %s", gtfsthq, err)}
+	tl, err = getThingsFromSth(stmt)
+	if err != nil {t.Errorf("getThingsFromSth(stmt): %s", err)}
+	if len(tl) != 13 { t.Errorf("getThingsFromSth(): expected 13, got %v", len(tl))}
+//getThingsFromSthP
+	print("\tGetThingsFromSthP()\n")
+	gtfsthqp := "select things.id,IFNULL(things.name,''),IFNULL(things.parent_id,0),IFNULL(things.type,'') from things where ?"
+	stmt2, err := u.Sth(db, gtfsthqp)
+	if err != nil {t.Errorf("u.Sth(%s): %s", gtfsthqp, err)}
+	tl, err = getThingsFromSthP(stmt2,"1")
+	if err != nil {t.Errorf("getThingsFromSthp(stmt): %s", err)}
+	if len(tl) != 13 { t.Errorf("getThingsFromSthp(): expected 13, got %v", len(tl))}
 
 }
 func vl(t *testing.T,s string, e interface{}, a interface{}) {
@@ -151,7 +189,6 @@ func initTest(t *testing.T)  {
     if err != nil {
         panic(err)
     }
-    DB(db)
 	_,err = db.Query("Drop table if exists things")
 	ec(t,"drop table things",err)
 	_,err = db.Query("CREATE TABLE `things` (  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,  `name` varchar(255) NOT NULL,  `parent_id` int(10) unsigned DEFAULT NULL,  `type` enum('console','game','manual','box') DEFAULT NULL, `rating` int unsigned DEFAULT NULL,  PRIMARY KEY (`id`)) AUTO_INCREMENT=1;")
@@ -171,4 +208,11 @@ func initTest(t *testing.T)  {
 	ec(t,"drop table reviews",err)
 	_, err = db.Query("create table reviews(thing_id int unsigned not null, user_id int unsigned not null, review text);")
 	ec(t,"create table reviews", err)
+
+	_, err = db.Query("drop table if exists conditions")
+	ec(t,"drop table conditions",err)
+	_, err = db.Query("create table conditions( thing_id int unsigned not null, user_id int unsigned not null, cond int unsigned not null )")
+	ec(t,"create table conditions", err)
+
+    DB(db)
 }

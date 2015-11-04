@@ -2,8 +2,6 @@ package game
 // MyThing
 
 import (
-	"html/template"
-	"fmt"
 	"github.com/golang/glog"
 )
 const hasbg string = "#c0c0c0"
@@ -43,10 +41,6 @@ func (t MyThing) BoxChecked() (string) {
 	if t.HasBox {return "checked"}
 	return "unchecked"
 }
-func (t MyThing) HasStar(i int) (string) {
-    if t.rating >= i {return "static/star_on.png"}
-    return "static/star_off.png"
-}
 func (t MyThing) ConsoleTotal() (int) {
 	gl, err := t.Games()
 	if err != nil {glog.Errorf("t.Games(): %s", err) }
@@ -56,14 +50,6 @@ func (t MyThing) ConsoleOwned() (int) {
 	gl, err := t.Coll.ConsoleGames(t.Thing)
 	if err != nil {glog.Errorf("coll.ConsoleGames(%s): %s", t.Thing, err) }
 	return len(gl)
-}
-func (m MyThing) StarContent()(template.HTML) {
-    var r string
-    for i:=1;i<=5;i++{
-        s := fmt.Sprintf("<img id='star_%v_%v' src='%v' onclick='setrating(%v,%v)' onmouseover='showstars(%v,%v)'>",m.ID,i,m.HasStar(i),m.ID,i,m.ID,i)
-        r = r +" "+s
-    }
-    return template.HTML(r)
 }
 
 // non object functions

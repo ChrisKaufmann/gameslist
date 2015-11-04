@@ -51,4 +51,9 @@ func TestConditions(t *testing.T) {
 	if rl[mc1.ID] != 3 {t.Errorf("GetConditions, mc1 expected 3 got %v", rl[mc1.ID])}
 	if rl[mc2.ID] != 5 {t.Errorf("GetConditions, mc2 expected 5 got %v", rl[mc2.ID])}
 
+	//check HasCondition
+	print("\tHasCondition\n")
+	if mc1.HasCondition(1) != true {t.Errorf("HasCondition(1) false, should be true")}
+	if mc1.HasCondition(3) != true {t.Errorf("HasCondition(3) false, should be true")}
+	if mc1.HasCondition(5) != false {t.Errorf("HasCondition(5) true, should be false")}
 }

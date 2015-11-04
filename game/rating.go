@@ -3,6 +3,8 @@ package game
 // Rating
 
 import (
+	"fmt"
+	"html/template"
 	"database/sql"
 	u "github.com/ChrisKaufmann/goutils"
 	"github.com/golang/glog"
@@ -50,6 +52,18 @@ func (t MyThing) SetRating(r int) (err error) {
 		glog.Errorf("stmtSetRating.Exec(%v,%v): %s", t.ID, r, err)
 	}
 	return err
+}
+func (t MyThing) HasStar(i int) (string) {
+    if t.rating >= i {return "static/star_on.png"}
+    return "static/star_off.png"
+}
+func (m MyThing) StarContent()(template.HTML) {
+    var r string
+    for i:=1;i<=5;i++{
+        s := fmt.Sprintf("<img id='star_%v_%v' src='%v' onclick='setrating(%v,%v)' onmouseover='showstars(%v,%v)'>",m.ID,i,m.HasStar(i),m.ID,i,m.ID,i)
+        r = r +" "+s
+    }
+    return template.HTML(r)
 }
 func (coll Collection) GetRatings() (map[int]int) {
 	var rm = make(map[int]int)

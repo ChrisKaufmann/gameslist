@@ -3,6 +3,8 @@ package game
 //Condition
 
 import (
+	"fmt"
+	"html/template"
 	"database/sql"
 	u "github.com/ChrisKaufmann/goutils"
 	"github.com/golang/glog"
@@ -47,6 +49,24 @@ func (t MyThing) SetCondition(c int) (err error) {
 	_,err = stmtSetCondition.Exec(t.ID, t.Coll.UserID, c)
 	if err != nil {glog.Errorf("stmtSetCondition.Exec(%v,%v,%v): %s",t.ID, t.Coll.UserID, c,err)}
 	return err
+}
+func (t MyThing) HasCondition(c int) (bool) {
+	if t.Condition() >= c {return true}
+	return false
+}
+func (t MyThing) ConditionContent()(template.HTML){
+	var r string
+	for i:=1;i<=5;i++{
+		o := ""
+		c := ""
+		if t.HasCondition(i) {
+			o="<b>"
+			c="</b>"
+		}
+		s:=fmt.Sprintf("<a onclick='setcondition(%v,%v)'>%s %v %s</a>",t.ID,i,o,i,c)
+		r =fmt.Sprintf("%s %s", r,s)
+	}
+	return template.HTML(r)
 }
 func (coll Collection) GetConditions() (map[int]int) {
 	var rm = make(map[int]int)

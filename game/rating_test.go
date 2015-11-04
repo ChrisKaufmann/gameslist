@@ -51,4 +51,10 @@ func TestRatings(t *testing.T) {
 	if rl[mc1.ID] != 3 {t.Errorf("GetRatings, mc1 expected 3 got %v", rl[mc1.ID])}
 	if rl[mc2.ID] != 5 {t.Errorf("GetRatings, mc2 expected 5 got %v", rl[mc2.ID])}
 
+	//HasStar
+	print("\tHasStar\n")
+	mc1 = coll.GetMyThing(c1)
+	if mc1.HasStar(1) != "static/star_on.png" {t.Errorf("mc1.HasStar(1): expected static/star_on.png got %s", mc1.HasStar(1))}
+	if mc1.HasStar(5) != "static/star_off.png" {t.Errorf("mc1.HasStar(5): expected static/star_on.png got %s", mc1.HasStar(5))}
+
 }

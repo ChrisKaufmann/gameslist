@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./auth"
+	"github.com/ChrisKaufmann/goauth"
 	"fmt"
 	"./game"
 	"time"

@@ -105,11 +105,11 @@ function setrating(id, rating)
 		$('#star_container_'+id).html(html)
 	}})
 }
-function enable_review(id)
+function save_review(id,form)
 {
-	console.log("enable_review: "+id)
-	var data="action=get_review_html"
-	$.ajax({type: "GET", url: '/thing/'+id, data:data, success:function(html){
-		$('#div_review_'+id).html(html)
+	var rev = form.review_text.value;
+	var data="action=setreview&review="+rev;
+	$.ajax({type: "POST", url: '/thing/'+id, data:data, success:function(html){
+		form.review_text.value=html;
 	}})
 }

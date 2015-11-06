@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./auth"
+	"github.com/ChrisKaufmann/goauth"
 	"./game"
 	"sort"
 	"flag"
@@ -136,13 +136,12 @@ func handleMain(w http.ResponseWriter, r *http.Request) {
 }
 func handleSettings(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
-	loggedin, userID := auth.LoggedIn(w, r)
+	loggedin, us := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	us,err := auth.GetUser(userID)
-	fmt.Printf("User:  %s,%s",us,err)
+	fmt.Printf("User:  %s", us)
 	SettingsHTML.Execute(w, us)
 	fmt.Printf("handleSettings %v\n", time.Now().Sub(t0))
 }
@@ -166,7 +165,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 }
 func handleThing(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
-	loggedin, userID := auth.LoggedIn(w, r)
+	loggedin, user := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
@@ -179,9 +178,9 @@ func handleThing(w http.ResponseWriter, r *http.Request) {
 	}
 	action := r.FormValue("action")
 	print("ID:" + id + " action:" + action)
-	coll, err := game.GetCollection(userID)
+	coll, err := game.GetCollection(user.ID)
 	if err != nil {
-		glog.Errorf("handleThing();game.GetCollection(%s): %s", userID, err)
+		glog.Errorf("handleThing();game.GetCollection(%v): %s", user.ID, err)
 		return
 	}
 	t, err := game.GetThing(id)
@@ -252,15 +251,15 @@ func handleGamesToggle(w http.ResponseWriter, r *http.Request) {
 }
 func handleGameList(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
-	loggedin, userID := auth.LoggedIn(w, r)
+	loggedin, user := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	coll, err := game.GetCollection(userID)
+	coll, err := game.GetCollection(user.ID)
 	fmt.Printf("handleGameList, after getcollection %v\n", time.Now().Sub(t0))
 	if err != nil {
-		glog.Errorf("handleGameList.game.GetCollection(%s): %s",userID,err)
+		glog.Errorf("handleGameList.game.GetCollection(%v): %s",user.ID,err)
 		return
 	}
 	var gl []game.Thing
@@ -311,14 +310,14 @@ func handleGameList(w http.ResponseWriter, r *http.Request) {
 func handleCollection(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	print("handleCollection\n")
-	loggedin, userID := auth.LoggedIn(w, r)
+	loggedin, user := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	_, err := game.GetCollection(userID)
+	_, err := game.GetCollection(user.ID)
 	if err != nil {
-		glog.Errorf("handleCollection.game.GetCollection(%s): %s",userID, err)
+		glog.Errorf("handleCollection.game.GetCollection(%v): %s",user.ID, err)
 		return
 	}
 	var id string
@@ -330,14 +329,14 @@ func handleCollection(w http.ResponseWriter, r *http.Request) {
 func handleSearch(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	print("handleCollection\n")
-	loggedin,userID := auth.LoggedIn(w, r)
+	loggedin,user := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	coll, err := game.GetCollection(userID)
+	coll, err := game.GetCollection(user.ID)
 	if err != nil {
-		glog.Errorf("handleSearch.game.GetCollection(%s): %s",userID, err)
+		glog.Errorf("handleSearch.game.GetCollection(%v): %s",user.ID, err)
 		return
 	}
 	ss := r.FormValue("query")
@@ -351,14 +350,14 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 func handleConsole(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	//console/<todo>/<param>
-	loggedin, userID := auth.LoggedIn(w, r)
+	loggedin, user := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	_, err := game.GetCollection(userID)
+	_, err := game.GetCollection(user.ID)
 	if err != nil {
-		glog.Errorf("handleConsole().game.GetCollection(%s): %s", userID, err)
+		glog.Errorf("handleConsole().game.GetCollection(%v): %s", user.ID, err)
 		return
 	}
 	var todo string
@@ -400,14 +399,14 @@ func handleConsole(w http.ResponseWriter, r *http.Request) {
 }
 func handleMyCollection(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
-	loggedin, userID := auth.LoggedIn(w, r)
+	loggedin, user := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	coll, err := game.GetCollection(userID)
+	coll, err := game.GetCollection(user.ID)
 	if err != nil {
-		glog.Errorf("handleMyCollection.game.GetCollection(%s): %s", userID, err)
+		glog.Errorf("handleMyCollection.game.GetCollection(%v): %s", user.ID, err)
 		return
 	}
 	cl, err := coll.Things()

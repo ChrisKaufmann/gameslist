@@ -65,7 +65,7 @@ func init() {
 	if err != nil {
 		glog.Fatalf("init(): config.GetString(DB.pass): %s", err)
 	}
-	db, err = sql.Open("mysql", db_user+":"+db_pass+"@"+db_host+"/"+db_name)
+	db, err = sql.Open("mysql", db_user+":"+db_pass+"@tcp("+db_host+")/"+db_name)
 	if err != nil {
 		glog.Fatalf("Init():sql.Open(mysql, %s:%s@%s/%s: %s", db_user, db_pass, db_host, db_name, err)
 	}

@@ -1,42 +1,29 @@
 package main
 
 import (
-	"github.com/ChrisKaufmann/goauth"
 	"./game"
-	"sort"
-	"flag"
 	"database/sql"
-	"strings"
-	"errors"
+	"flag"
 	"fmt"
-	"github.com/ChrisKaufmann/easymemcache"
+	"github.com/ChrisKaufmann/goauth"
+	//	"github.com/ChrisKaufmann/easymemcache"
 	u "github.com/ChrisKaufmann/goutils"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang/glog"
 	"github.com/msbranco/goconfig"
 	"html/template"
 	"net/http"
+	"sort"
 	"time"
 )
 
 var (
-	port                 string
-	environment          string
-	mc                   = easymemcache.New("127.0.0.1:11211")
-	cookieName           string
-	indexHtml            = template.Must(template.ParseFiles("templates/index-nologin.html"))
-	mainHtml             = template.Must(template.ParseFiles("templates/main.html"))
-	db                   *sql.DB
-	ListEntryHtml        = template.Must(template.ParseFiles("templates/list_entry.html"))
-	ConsolesToggle       = template.Must(template.ParseFiles("templates/consoles_toggle.html"))
-	GamesToggle          = template.Must(template.ParseFiles("templates/games_toggle.html"))
-	IndentListEntryHtml  = template.Must(template.ParseFiles("templates/indent_list_entry.html"))
-	ConsoleLinkListEntry = template.Must(template.ParseFiles("templates/console_link_list_entry.html"))
-	AddHTML          = template.Must(template.ParseFiles("templates/add.html"))
-	ConsoleOnlyEntryHTML = template.Must(template.ParseFiles("templates/console_only_entry.html"))
-	TableEntryGameHTML   = template.Must(template.ParseFiles("templates/table_entry_game.html"))
-	TableEntryConsoleHTML   = template.Must(template.ParseFiles("templates/table_entry_console.html"))
-	SettingsHTML = template.Must(template.ParseFiles("templates/settings.html"))
+	port        string
+	environment string
+	cookieName  string
+	//	mc                   = easymemcache.New("127.0.0.1:11211")
+	db   *sql.DB
+	tmpl = template.Must(template.ParseGlob("templates/*.html"))
 )
 
 func init() {
@@ -78,27 +65,22 @@ func init() {
 func main() {
 	defer db.Close()
 	auth.DB(db)
-	game.DB(db)
-	game.MemCache(&mc)
+	game.GameDB(db)
+	game.ConsoleDB(db)
+	//	game.MemCache(&mc)
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	http.HandleFunc("/main.html", handleMain)
 	http.HandleFunc("/authorize", auth.HandleAuthorize)
 	http.HandleFunc("/settings", handleSettings)
 	http.HandleFunc("/oauth2callback", auth.HandleOAuth2Callback)
 	http.HandleFunc("/logout", auth.HandleLogout)
 	http.HandleFunc("/login/", handleLogin)
-	http.HandleFunc("/list", handleList)
-	http.HandleFunc("/list/games", handleGameList)
-	http.HandleFunc("/list/collection", handleMyCollection)
-	http.HandleFunc("/toggle/consoles", handleConsolesToggle)
-	http.HandleFunc("/toggle/games", handleGamesToggle)
-	http.HandleFunc("/collection", handleCollection)
-	http.HandleFunc("/console/", handleConsole)
-	http.HandleFunc("/thing/", handleThing)
-	http.HandleFunc("/mycollection", handleMyCollection)
 	http.HandleFunc("/search/", handleSearch)
 	http.HandleFunc("/share/", handleShared)
+	http.HandleFunc("/console/", handleConsole)
 	http.HandleFunc("/demo", handleDemo)
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
+	http.HandleFunc("/set/game/", handleSetGame)
+	http.HandleFunc("/set/console/", handleSetConsole)
 	http.HandleFunc("/", handleRoot)
 	print("Listening on port " + port + "\n")
 	http.ListenAndServe("127.0.0.1:"+port, nil)
@@ -106,10 +88,11 @@ func main() {
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
+	fmt.Printf("path: %s\n", r.URL)
 	loggedin, _ := auth.LoggedIn(w, r)
 	if !loggedin {
 		fmt.Printf("Not logged in")
-		if err := indexHtml.Execute(w, nil); err != nil {
+		if err := tmpl.ExecuteTemplate(w, "index-nologin", nil); err != nil {
 			glog.Errorf("HandleRoot(): %s", err)
 			return
 		}
@@ -121,17 +104,20 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 }
 func handleMain(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
-	loggedin, _ := auth.LoggedIn(w, r)
+	loggedin, user := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	if err := mainHtml.Execute(w, nil); err != nil {
-		glog.Errorf("handleMain(): %s", err)
-		return
+	cl, err := game.GetConsoles(user)
+	if err != nil {
+		glog.Errorf("game.GetConsoles(%v): %s", user, err)
 	}
-	handleMyCollection(w,r)
-	fmt.Fprintf(w,"  </div>	</div>	</body>	</html>")
+	sort.Sort(game.ConsoleName(cl))
+	if err := tmpl.ExecuteTemplate(w, "main_html", cl); err != nil {
+		glog.Errorf("tmpl.ExecuteTemplate(w, main_html, cl): %s", err)
+	}
+	fmt.Printf("path: %s\n", r.URL)
 	fmt.Printf("handleMain %v\n", time.Now().Sub(t0))
 }
 func handleSettings(w http.ResponseWriter, r *http.Request) {
@@ -142,299 +128,262 @@ func handleSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Printf("User:  %s", us)
-	SettingsHTML.Execute(w, us)
+	if err := tmpl.ExecuteTemplate(w, "settings", us); err != nil {
+		glog.Errorf("tmpl.ExecuteTemplate(w, settings, user): %s", err)
+		return
+	}
 	fmt.Printf("handleSettings %v\n", time.Now().Sub(t0))
 }
 func handleDemo(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
-	auth.DemoUser(w,r)
+	auth.DemoUser(w, r)
 	fmt.Printf("handleDemo %v\n", time.Now().Sub(t0))
 }
 func handleLogin(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	fmt.Printf("HandleLogin()")
 	var lt string
-    u.PathVars(r,"/login/", &lt)
+	u.PathVars(r, "/login/", &lt)
 	fmt.Printf("lt: %s", lt)
-	err := auth.LoginToken(w,r,lt)
-	if err != nil { 
-		//http.Redirect(w, r, "/", http.StatusFound)
+	err := auth.LoginToken(w, r, lt)
+	if err != nil {
 		glog.Infof("%s", err)
 	}
 	fmt.Printf("handleLogin %v\n", time.Now().Sub(t0))
 }
-func handleThing(w http.ResponseWriter, r *http.Request) {
+func handleConsole(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
+	//console/<console name>
 	loggedin, user := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	var id string
-	u.PathVars(r, "/thing/", &id)
-	if id == "" {
-		glog.Error("No id passed to /thing")
+	if err := tmpl.ExecuteTemplate(w, "main_html", nil); err != nil {
+		glog.Errorf("Execute main_html: %s", err)
 		return
 	}
-	action := r.FormValue("action")
-	print("ID:" + id + " action:" + action)
-	coll, err := game.GetCollection(user.ID)
+	var cname string
+	u.PathVars(r, "/console/", &cname)
+	c, err := game.GetConsole(cname, user)
+	fmt.Printf("console=%s", c)
 	if err != nil {
-		glog.Errorf("handleThing();game.GetCollection(%v): %s", user.ID, err)
+		glog.Errorf("game.GetConsole")
+	}
+	var mycl []game.Console
+	mycl = append(mycl, c)
+	if err := tmpl.ExecuteTemplate(w, "consoles_list", mycl); err != nil {
+		glog.Errorf("ExecuteTemplate(console_entry): %s", err)
 		return
 	}
-	t, err := game.GetThing(id)
 	if err != nil {
-		glog.Errorf("handleThing:game.GetThing(%s): %s", id, err)
-		return
+		glog.Errorf("ConsoleOnlyEntryHTML.Execute(w,myc): %s", err)
 	}
-	switch action {
-	case "toggle":
-		if coll.Have(t) {
-			err = coll.Delete(t)
-			if err != nil {
-				glog.Errorf("handleThing: coll.Have(%s) (trying to toggle unowned)", t.ID)
-				return
-			}
-			fmt.Fprintf(w, "white")
-		} else {
-			err =coll.Add(t)
-			if err!= nil {glog.Errorf("handleThing()coll.Add(%s): %s",t.ID, err);return}
-			fmt.Fprintf(w, "#aaffa5")
-		}
-	case "have":
-		err = coll.Add(t)
-		if err != nil {glog.Errorf("handleThing()coll.Add(%s): %s", t.ID, err);return}
-	case "have_not":
-		err = coll.Delete(t)
-		if err != nil {
-			glog.Errorf("handleThing: coll.Have(%s) (trying to toggle unowned)", t.ID)
-			return
-		}
-	case "setrating":
-	    rating := u.Toint(r.FormValue("rating"))
-		if rating <1 || rating > 5 { glog.Errorf("Bad rating passed");return}
-		tmpl,err := template.New("tmpl").Parse(`{{.}}`)
-		pt := coll.GetMyThing(t)
-		err =pt.SetRating(rating)
-		if err != nil {glog.Errorf("t.SetRating(%s): %s",rating,err) }
-		tmpl.Execute(w,coll.GetMyThing(t).StarContent())
-	case "get_review_html":
-		return
-	case "setreview":
-		review :=r.FormValue("review")
-		tmpl, err := template.New("tmpl").Parse("{{.}}")
-		pt := coll.GetMyThing(t)
-		err = pt.SetReview(review)
-		if err != nil {glog.Errorf("t.SetReview(%s): %s", review, err) }
-		tmpl.Execute(w,coll.GetMyThing(t).Review())
-
-	}
-	fmt.Printf("HandleThing %v\n", time.Now().Sub(t0))
-}
-func handleList(w http.ResponseWriter, r *http.Request) {
-	t0 := time.Now()
-	fmt.Printf("handleList %v\n", time.Now().Sub(t0))
-	return
-}
-func handleConsolesToggle(w http.ResponseWriter, r *http.Request) {
-	t0 := time.Now()
-	ConsolesToggle.Execute(w, nil)
-	fmt.Printf("handleConsolesToggle %v\n", time.Now().Sub(t0))
-	return
-}
-func handleGamesToggle(w http.ResponseWriter, r *http.Request) {
-	t0 := time.Now()
-	GamesToggle.Execute(w, nil)
-	fmt.Printf("handleGamesToggle %v\n", time.Now().Sub(t0))
-	return
-}
-func handleGameList(w http.ResponseWriter, r *http.Request) {
-	t0 := time.Now()
-	loggedin, user := auth.LoggedIn(w, r)
-	if !loggedin {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
-	coll, err := game.GetCollection(user.ID)
-	fmt.Printf("handleGameList, after getcollection %v\n", time.Now().Sub(t0))
-	if err != nil {
-		glog.Errorf("handleGameList.game.GetCollection(%v): %s",user.ID,err)
-		return
-	}
-	var gl []game.Thing
-	switch r.FormValue("filter") {
-	case "all":
-		//mytem = ConsoleLinkListEntry
-		gl, err = game.GetAllConsoles()
-		if err != nil {
-			glog.Errorf("handleGameList.game.GetAllConsoles(): %s", err)
-			return
-		}
-		fmt.Fprintf(w,"<table>")
-		for _,c := range gl {
-			ConsoleLinkListEntry.Execute(w,c)
-		}
-		fmt.Fprintf(w,"</table>")
-		return
-	case "console":
-		cid := r.FormValue("console_id")
-		if cid == "" {
-			return
-		}
-		con, err := game.GetThing(cid)
-		if err != nil {
-			glog.Errorf("handleGameList.game.GetThing(%s): %s", cid, err)
-			return
-		}
-		gl, err = con.Games()
-		if err != nil {
-			glog.Errorf("handleGameList.con.Games(): %s", err)
-			return
-		}
-	case "missing":
-		return
+	cg, err := c.Games()
+	switch r.FormValue("sort") {
 	default:
-		gl, err = coll.Games()
-		if err != nil {
-			glog.Errorf("handlegameList.coll.Games(): %s", err)
-			return
-		}
+		sort.Sort(game.GameName(cg))
 	}
-	fmt.Printf("handleGameList, before execute loop %v\n", time.Now().Sub(t0))
-	fmt.Fprintf(w, "<table>")
-	PrintListOfThings(w,coll,gl)
-	fmt.Fprintf(w, "</table>")
-	fmt.Printf("handleGameList %v\n", time.Now().Sub(t0))
+	if err != nil {
+		glog.Errorf("c.Games(): %s", err)
+		return
+	}
+	if err := tmpl.ExecuteTemplate(w, "games_list", cg); err != nil {
+		glog.Errorf("tmpl.ExecuteTemplate(w, games_list, cg): %s", err)
+		return
+	}
+	fmt.Printf("user: %s %v", user.Email, user)
+	fmt.Printf("handleConsole %v\n", time.Now().Sub(t0))
 }
-func handleCollection(w http.ResponseWriter, r *http.Request) {
+func handleSetGame(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
-	print("handleCollection\n")
 	loggedin, user := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	_, err := game.GetCollection(user.ID)
+	var id int
+	id = u.Toint(r.FormValue("id"))
+	g, err := game.GetGame(id, user)
 	if err != nil {
-		glog.Errorf("handleCollection.game.GetCollection(%v): %s",user.ID, err)
+		glog.Errorf("GetGame(%v,%v): %s", id, user, err)
+	}
+	switch r.FormValue("action") {
+	case "setrating":
+		g.Rating = u.Toint(r.FormValue("rating"))
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+		fmt.Fprintf(w, "%s", g.StarContent())
+	case "have":
+		g.Has = true
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "have_not":
+		g.Has = false
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "has_manual":
+		g.HasManual = true
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "hasnot_manual":
+		g.HasManual = false
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "has_box":
+		g.HasBox = true
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "hasnot_box":
+		g.HasBox = false
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "set_review":
+		g.Review = r.FormValue("review")
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+		fmt.Fprintf(w, "%s", g.Review)
+	default:
+		glog.Errorf("Invalid action passed to set game: %s", r.FormValue("action"))
+	}
+	fmt.Printf("handleSetGame %v\n", time.Now().Sub(t0))
+}
+func handleSetConsole(w http.ResponseWriter, r *http.Request) {
+	t0 := time.Now()
+	loggedin, user := auth.LoggedIn(w, r)
+	if !loggedin {
+		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	var id string
-	var todo string
-	var thing string
-	u.PathVars(r, "/collection/", &id, &todo, &thing)
-	fmt.Printf("handleCollection %v\n", time.Now().Sub(t0))
+	name := r.FormValue("name")
+	c, err := game.GetConsole(name, user)
+	if err != nil {
+		glog.Errorf("GetConsole(%v,%v): %s", name, user, err)
+	}
+	fmt.Printf("in HandleSetConsole: Console:\n%s--------\n", c)
+	switch r.FormValue("action") {
+	case "setrating":
+		c.Rating = u.Toint(r.FormValue("rating"))
+		err := c.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+		fmt.Fprintf(w, "%s", c.StarContent())
+		return
+	case "have":
+		c.Has = true
+		err := c.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "have_not":
+		c.Has = false
+		err := c.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "has_manual":
+		c.HasManual = true
+		err := c.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "hasnot_manual":
+		c.HasManual = false
+		err := c.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "has_box":
+		c.HasBox = true
+		err := c.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "hasnot_box":
+		c.HasBox = false
+		err := c.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "set_review":
+		c.Review = r.FormValue("review")
+		err := c.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+		fmt.Fprintf(w, "%s", c.Review)
+	default:
+		glog.Errorf("Invalid action passed to set console: %s", r.FormValue("action"))
+	}
+	var cl []game.Console
+	cl = append(cl, c)
+	if err := tmpl.ExecuteTemplate(w, "main_html", cl); err != nil {
+		glog.Errorf("ExecuteTemplate(w, consoles_list, cl): %s", err)
+	}
+	fmt.Printf("handleSetConsole %v\n", time.Now().Sub(t0))
 }
 func handleSearch(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	print("handleCollection\n")
-	loggedin,user := auth.LoggedIn(w, r)
+	loggedin, user := auth.LoggedIn(w, r)
 	if !loggedin {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	coll, err := game.GetCollection(user.ID)
-	if err != nil {
-		glog.Errorf("handleSearch.game.GetCollection(%v): %s",user.ID, err)
-		return
+	/*
+		coll, err := game.GetCollection(user)
+		if err != nil {
+			glog.Errorf("handleSearch.game.GetCollection(%v): %s",user, err)
+			return
+		}
+		ss := r.FormValue("query")
+		tl,err := game.Search(ss)
+		if err != nil { glog.Errorf("game.Search(%s): %s", ss, err);return }
+		fmt.Fprintf(w,"<table>\n")
+		//PrintListOfThings(w,coll,tl)
+	*/
+	cml := make(map[string][]game.Game)
+	type ConsoleMeta struct {
+		Console game.Console
+		Games   []game.Game
 	}
-	ss := r.FormValue("query")
-	tl,err := game.Search(ss)
-	if err != nil { glog.Errorf("game.Search(%s): %s", ss, err);return }
-	fmt.Fprintf(w,"<table>\n")
-	PrintListOfThings(w,coll,tl)
-	fmt.Fprintf(w,"</table>\n")
+	gl, err := game.SearchGames(r.FormValue("query"), user)
+	if err != nil {
+		glog.Errorf("game.SearchGames(%s, user): %s", r.FormValue("query"), err)
+	}
+	sort.Sort(game.GameName(gl))
+	for _, g := range gl {
+		cml[g.ConsoleName] = append(cml[g.ConsoleName], g)
+	}
+	cl, err := game.GetConsoles(user)
+	var sm []ConsoleMeta
+	for _, c := range cl {
+		if len(cml[c.Name]) > 0 {
+			var cm ConsoleMeta
+			cm.Console = c
+			cm.Games = cml[c.Name]
+			sm = append(sm, cm)
+		}
+	}
+	if err := tmpl.ExecuteTemplate(w, "search", sm); err != nil {
+		glog.Errorf("ExecuteTemplate: %s", err)
+	}
 	fmt.Printf("handleSearch %v\n", time.Now().Sub(t0))
-}
-func handleConsole(w http.ResponseWriter, r *http.Request) {
-	t0 := time.Now()
-	//console/<todo>/<param>
-	loggedin, user := auth.LoggedIn(w, r)
-	if !loggedin {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
-	_, err := game.GetCollection(user.ID)
-	if err != nil {
-		glog.Errorf("handleConsole().game.GetCollection(%v): %s", user.ID, err)
-		return
-	}
-	var todo string
-	var param string
-	u.PathVars(r, "/console/", &todo, &param)
-	print("todo: " + todo + ", param: " + param)
-	switch todo {
-	case "new":
-		_, err := game.AddThing(param, "console")
-		if err != nil {
-			glog.Errorf("handleConsole.game.AddThing(%s, console): %s",param, err)
-			return
-		}
-	case "newgame":
-		console_id := r.FormValue("console_id")
-		if console_id == "" {
-			err = errors.New("No console_id passed to handleConsole(newgame)")
-			glog.Error("handleConsole.newgame: No console_id passed")
-			return
-		}
-		game_name := r.FormValue("game_name")
-		print("console_id: " + console_id + ", name: " + game_name)
-		if game_name == "" {
-			glog.Error("No game_name passed to handleConsole(newgame)")
-			return
-		}
-		console, err := game.GetThing(console_id)
-		if err != nil {
-			glog.Errorf("handleConsole.game.GetThing(%s): %s", console_id, err)
-			return
-		}
-		_, err = console.AddGame(game_name)
-		if err != nil {
-			glog.Errorf("handleConsole.console.AddGame(%s): %s",game_name, err)
-			return
-		}
-	}
-	fmt.Printf("handleConsole %v\n", time.Now().Sub(t0))
-}
-func handleMyCollection(w http.ResponseWriter, r *http.Request) {
-	t0 := time.Now()
-	loggedin, user := auth.LoggedIn(w, r)
-	if !loggedin {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
-	coll, err := game.GetCollection(user.ID)
-	if err != nil {
-		glog.Errorf("handleMyCollection.game.GetCollection(%v): %s", user.ID, err)
-		return
-	}
-	cl, err := coll.Things()
-	if err != nil { glog.Errorf("handleMyCollection()coll.MyThings(): %s", err);return }
-	PrintListOfThings(w,coll,cl)
-	fmt.Printf("handleMyCollection %v\n", time.Now().Sub(t0))
-}
-func PrintListOfThings(w http.ResponseWriter,coll game.Collection,tl []game.Thing) {
-	cons, err := game.GetAllConsoles()
-	if err != nil {glog.Errorf("PrintListOfThings-game.GetAllConsoles(): %s", err) ;return}
-	fmt.Fprintf(w,"<table id='data_table'>")
-	curr := "9"
-	pttl := coll.GetMyThings(tl)
-	sort.Sort(game.ByName(pttl))
-	for _, myc := range coll.GetMyThings(cons) {
-		TableEntryConsoleHTML.Execute(w,myc)
-		for _, t := range pttl {
-			//The fc stuff is for printing an anchor 
-			fc := strings.ToUpper(t.Name[0:1])
-			if fc > curr {
-				fmt.Fprintf(w,"<tr><td><a name='"+fc+"' id='"+fc+"'></a></td></tr>\n")
-				curr = fc
-			}
-			if t.ParentID == myc.ID {
-				TableEntryGameHTML.Execute(w,t)
-			}
-		}
-	}
-	fmt.Fprintf(w,"</table>")
-	AddHTML.Execute(w,coll)
 }

@@ -1,0 +1,29 @@
+{{ define "console_entry" }}
+<div id="console-{{.ShortName}}" style="float:left;padding:20px">
+    <a href="/console/{{.Name}}"><div id="console-{{.ShortName}}-picture"><img src="{{.Picture}}" height="10%"></a></div>
+    <div id="console-{{.ShortName}}-name">
+        <input type="checkbox" id="checkbox-{{.ShortName}}" {{ if .Has }}Checked{{end}} onchange="save_console_has({{.Name}},'checkbox-{{.ShortName}}')">
+            {{.Name}} {{.OwnedGames}}/{{.TotalGames}}</div>
+    Manual: {{if .HasManual}}
+        Y/<a href="/set/console/?name={{.Name}}&action=hasnot_manual&value=false">n</a>
+    {{else}}
+        <a href="/set/console/?name={{.Name}}&action=has_manual&value=true">Y</a>/n
+    {{end}}<br>
+    Box: {{if .HasBox}}
+        Y/<a href="/set/console/?name={{.Name}}&action=hasnot_box&value=false">n</a>
+    {{else}}
+        <a href="/set/console/?name={{.Name}}&action=has_box&value=true">Y</a>/n
+    {{end}}<br>
+    <div id='star_container_{{.ShortName}}'>
+        {{.StarContent}}
+    </div>
+</div>
+{{ end }}
+
+{{ define "consoles_list" }}
+<table>
+    {{ range $index, $val := . }}
+    {{ template "console_entry" .}}
+    {{ end }}
+</table>
+{{ end }}

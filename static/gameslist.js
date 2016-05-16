@@ -38,6 +38,18 @@ function show(thingtoshow,filter)
 			}
 		})
 }
+function show_owned(console_id)
+{
+	$('#secondary_div').html('Loading...');
+	$.ajax({
+		type: "GET", url: '/list/games?filter=consoleowned&console_id='+console_id,
+		success:function(html){
+			$('#content_div').html(html);
+			$('#console_div_'+console_id).css("text-decoration", "underline");
+			$('#floating_sidebar').css("visibility", "visible");
+		}
+	})
+}
 function show_games(console_id)
 {
 	$('#secondary_div').html('Loading...');
@@ -50,12 +62,10 @@ function show_games(console_id)
 		}
 	})
 }
+
 function searchthings(ss)
 {
-	$.ajax({type: "GET",url: '/search/',data:"query="+ss, success:function(html){
-		$('#content_div').html(html);
-		$('#floating_sidebar').css("visibility", "hidden");
-	}})
+    window.location.replace("/search/?query="+ss)
 }
 function add_console(form)
 {
@@ -77,39 +87,103 @@ function add_game(form)
 		form.add_game_text.value="";
 	}})
 }
-function save_change(id,elem)
+function save_game_has(id,elem)
 {
-	var data="action=have_not";
+	var data="action=have_not&id="+id;
 	if (document.getElementById(elem).checked)
 	{
-		data="action=have";
+		data="action=have&id="+id;
 	}
-	$.ajax({type: "POST", url: '/thing/'+id, data:data, success:function(html)
+	$.ajax({type: "POST", url: '/set/game/', data:data, success:function(html)
 	{
 	}})
 }
-function toggle_owned(id)
+function save_console_has(id,elem)
 {
-	var data="action=toggle";
-	$.ajax({type: "POST", url: '/thing/'+id, data:data, success:function(html)
+    console.log("id:"+id+" elem:"+elem)
+	var data="action=have_not&name="+id;
+	if (document.getElementById(elem).checked)
 	{
-		$('#div_thing_'+id).css("background-color", html);
+        $.ajax({type: "GET", url: "/set/console/?action=have&value=true&name="+id, success:function(html){}})
+	} else {
+        $.ajax({type: "GET", url: "/set/console/?action=have_not&value=false&name="+id, success:function(html){}})
+
+	}
+}
+function save_game_manual(id,elem)
+{
+	var data="action=hasnot_manual&id="+id;
+	if (document.getElementById(elem).checked)
+	{
+		data="action=has_manual&id="+id;
+	}
+	$.ajax({type: "POST", url: '/set/game/'+id, data:data, success:function(html)
+	{
 	}})
 }
-function setrating(id, rating)
+function save_console_manual(id,elem)
 {
-	console.log("setrating:"+id+", rating:"+rating)
-	var data="action=setrating&rating="+rating
-	$.ajax({type: "POST", url: '/thing/'+id, data:data, success:function(html)
+	var data="action=hasnot_manual&name="+id;
+	if (document.getElementById(elem).checked)
+	{
+		data="action=has_manual&name="+id;
+	}
+	$.ajax({type: "POST", url: '/set/console/'+id, data:data, success:function(html)
+	{
+	}})
+}
+function save_game_box(id,elem)
+{
+	var data="action=hasnot_box&id="+id;
+	if (document.getElementById(elem).checked)
+	{
+		data="action=has_box&id="+id;
+	}
+	$.ajax({type: "POST", url: '/set/game/'+id, data:data, success:function(html)
+	{
+	}})
+}
+function save_console_box(id,elem)
+{
+	var data="action=hasnot_box&name="+id;
+	if (document.getElementById(elem).checked)
+	{
+		data="action=has_box&name="+id;
+	}
+	$.ajax({type: "POST", url: '/set/console/'+id, data:data, success:function(html)
+	{
+	}})
+}
+function set_game_rating(id, rating)
+{
+	console.log("set_game_rating:"+id+", rating:"+rating)
+	var data="id="+id+"&action=setrating&rating="+rating
+	$.ajax({type: "POST", url: '/set/game/', data:data, success:function(html)
 	{
 		$('#star_container_'+id).html(html)
 	}})
 }
-function save_review(id,form)
+function set_console_rating(id, name, rating)
 {
-	var rev = form.review_text.value;
-	var data="action=setreview&review="+rev;
-	$.ajax({type: "POST", url: '/thing/'+id, data:data, success:function(html){
-		form.review_text.value=html;
+	var data="name="+name+"&action=setrating&rating="+rating
+	$.ajax({type: "POST", url: '/set/console/', data:data, success:function(html)
+	{
+		$('#star_container_'+id).html(html)
+	}})
+}
+function save_game_review(id)
+{
+	var rev = document.getElementById("review_text_"+id).value;
+	var data="action=set_review&id="+id+"&review="+rev;
+	$.ajax({type: "POST", url: '/set/game/', data:data, success:function(html){
+		document.getElementById("review_text_"+id).value=html;
+	}})
+}
+function save_console_review(id,name)
+{
+	var rev = document.getElementById("review_text_"+id).value;
+	var data="action=set_review&name="+name+"&review="+rev;
+	$.ajax({type: "POST", url: '/set/console/', data:data, success:function(html){
+		document.getElementById("review_text_"+id).value=html;
 	}})
 }

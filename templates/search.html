@@ -1,0 +1,16 @@
+{{ define "search" }}
+{{ template "header" }}
+<table>
+
+{{ range $index,$val := . }}
+<tr>
+    <td>{{template "console_entry" .Console}}</td>
+    <td>
+    {{ range $index,$val := .Games}}
+        {{template "game_entry" .}}
+    {{ end }}
+    </td>
+</tr>
+{{ end }}
+</table>
+{{ end }}

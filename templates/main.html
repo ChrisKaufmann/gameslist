@@ -1,60 +1,7 @@
-<html>
-<head>
-	<title></title>
-	<script type="text/javascript" src="static/jquery.js"></script>
-	<script type="text/javascript" src="static/gameslist.js"></script>
-	<link rel="stylesheet" href="static/gameslist.css"> 
-</head>
-<body>
-<div id="top_menu" class="top_menu_container">
-	<div id="home-header" class="top_menu">
-		<table width="100%">
-			<tr>
-				<td align="top"><div id="mycoll"><a href='/'><img src='/static/home.jpg' id='home_img'></a></div></td>
-				<td align="center">
-					<div id="search_div" style="width:100%;float:left">
-						<input type='text' name='search_text' id='search_text' placeholder='Search'>
-					</div>
-				</td>
-				<td>
-					<div id="settings"><a href="/settings"><img src='/static/settings.jpeg' id='settings_img'></a></div>
-				</td>
-				<td>
-					<div id="logout"><a href="/logout"><img src='/static/logout.png' id='logout_img'></a></div>
-				</td>
-			</tr>
-		</table>
-	</div>
+{{ define "main_html" }}
+	{{ template "header" }}
+<br><br><br>
+<div>
+	{{ template "consoles_list" .}}
 </div>
-<br>
-<div id='floating_sidebar'>
-<a href="#sym" class='sidebar'>#</a><br>
-<a href="#A" class='sidebar'>a</a><br>
-<a href="#B" class='sidebar'>b</a><br>
-<a href="#C" class='sidebar'>c</a><br>
-<a href="#D" class='sidebar'>d</a><br>
-<a href="#E" class='sidebar'>e</a><br>
-<a href="#F" class='sidebar'>f</a><br>
-<a href="#G" class='sidebar'>g</a><br>
-<a href="#H" class='sidebar'>h</a><br>
-<a href="#I" class='sidebar'>i</a><br>
-<a href="#J" class='sidebar'>j</a><br>
-<a href="#K" class='sidebar'>k</a><br>
-<a href="#L" class='sidebar'>l</a><br>
-<a href="#M" class='sidebar'>m</a><br>
-<a href="#N" class='sidebar'>n</a><br>
-<a href="#O" class='sidebar'>o</a><br>
-<a href="#P" class='sidebar'>p</a><br>
-<a href="#Q" class='sidebar'>q</a><br>
-<a href="#R" class='sidebar'>r</a><br>
-<a href="#S" class='sidebar'>s</a><br>
-<a href="#T" class='sidebar'>t</a><br>
-<a href="#U" class='sidebar'>u</a><br>
-<a href="#V" class='sidebar'>v</a><br>
-<a href="#W" class='sidebar'>w</a><br>
-<a href="#X" class='sidebar'>x</a><br>
-<a href="#Y" class='sidebar'>y</a><br>
-<a href="#Z" class='sidebar'>z</a><br>
-</div>
-<div id='content'  style="z-index:1;position:relative;width:95%;float:left;">
-	<div class="raw_list" style="width:100%;padding:10px;float:left" id="content_div">
+{{end}}

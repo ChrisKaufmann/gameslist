@@ -1,12 +1,36 @@
-delete from things where type='console';
-insert into things (name, type) values 
-('NES','console'),
-('Game Boy','console'),
-('Game Gear','console'),
-('Atari 2600','console'),
-('Atari Lynx','console'),
-('Game Boy Advance','console'),
-('Super Nintendo','console'),
-('Sega CD','console'),
-('Nintendo DS','console'),
-('Nintendo 64','console');
+replace into consoles (name, manufacturer, year,picture) values 
+('NES','Nintendo',1985,"/static/Consoles/NES-Console-Set.jpg"),
+('Game Boy','Nintendo',1989,"/static/Consoles/Game-Boy-FL.jpg"),
+('Game Gear','Sega',1991,"/static/Consoles/200px-Sega-Game-Gear-WB.jpg"),
+('Atari 2600','Atari',1977,"/static/Consoles/Atari-2600-Wood-4Sw-Set.jpg"),
+('Atari Lynx','Atari',1989,"/static/Consoles/Atari-Lynx-Handheld-Angled.jpg"),
+('Game Boy Advance','Nintendo',2001,"/static/Consoles/200px-Game-Boy-Advance-1stGen.jpg"),
+('Game Boy Color','Nintendo',1998,"/static/Consoles/Nintendo-Game-Boy-Color-FL.jpg"),
+('Super Nintendo','Nintendo',1991,"/static/Consoles/200px-SNES-Mod1-Console-Set.jpg"),
+('Sega CD','Sega', 1991,"/static/Consoles/"),
+('Genesis','Sega',1989,"/static/Consoles/200px-Sega-Genesis-Mk2-6button.jpg"),
+('Nintendo DS','Nintendo', 2004,"/static/Consoles/Nintendo-DS-Lite-Black-Open.jpg"),
+('Nintendo 64','Nintendo',1996,"/static/Consoles/Nintendo-64-wController-L.jpg"),
+('Handheld','various',0,"/static/Consoles/Watara-Supervision-Tilted.jpg"),
+('XBox','Microsoft','','/static/Consoles/Xbox-console.jpg'),
+('XBox 360','Microsoft','','/static/Consoles/Xbox-360-Pro-wController.jpg'),
+('XBox One','Microsoft','','/static/Consoles/Xbox_One_Console_Set.jpg'),
+('Atari 7800','Atari','','/static/Consoles/200px-Atari-7800-Console-Set.jpg'),
+('Atari 5200','Atari','','/static/Consoles/Atari-5200-4-Port-wController-L.jpg'),
+('Atari Jaguar','Atari','','/static/Consoles/200px-Atari-Jaguar-Console-Set.jpg'),
+('Sega Dreamcast','Sega','','/static/Consoles/200px-Dreamcast-Console-Set.jpg'),
+('PSP','Sony','','/static/Consoles/200px-Psp-1000.jpg'),
+('Game Cube','Nintendo','','/static/Consoles/GameCube-Set.jpg'),
+('3DS','Nintendo','','/static/Consoles/Nintendo-3DS-AquaOpen.jpg'),
+('Playstation','Sony','','/static/Consoles/PlayStation-SCPH-1000-with-Controller.jpg'),
+('Playstation 2','Sony','','/static/Consoles/PS2-Fat-Console-Set.jpg'),
+('Playstation 3','Sony','','/static/Consoles/PS3-Fat-Console-Set.jpg'),
+('Playstation 4','Sony','','/static/Consoles/PS4-Console-wDS4.jpg'),
+('Playstation Vita','Sony','','/static/Consoles/PlayStation-Vita-1101-FL.jpg'),
+('VirtualBoy','Nintendo','','/static/Consoles/Virtual-Boy-Set.jpg'),
+('Sega Saturn','Sega','','/static/Consoles/Sega-Saturn-Console-Set-Mk2.jpg'),
+('Wii','Nintendo','','/static/Consoles/Wii-console.jpg')
+
+
+
+;

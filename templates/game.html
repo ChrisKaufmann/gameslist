@@ -1,0 +1,48 @@
+{{ define "games_list" }}
+<table>
+    {{ range $index, $val := . }}
+    {{template "game_entry" .}}
+    {{ end }}
+</table>
+{{end}}
+
+{{ define "game_entry" }}
+<tr>
+    <td><input type="checkbox" id="checkbox-{{.ID}}" {{ if .Has }}Checked{{end}} onchange="save_game_has({{.ID}},'checkbox-{{.ID}}')">
+    </td>
+    <td colspan=3 onclick='$("#game_detail_{{.ID}}").toggle()' )><h3>{{ .Name }}</h3></td>
+</tr>
+<tr>
+
+<tr id="game_detail_{{.ID}}" style="display:none">
+    <td colspan="5">
+        <table>
+            <tr>
+                <td>{{.Publisher}}</td>
+                {{ if .Year }}<td>{{.Year}}</td>{{end}}
+            </tr>
+            <tr>
+                <td><h4>Manual:</h4></td>
+                <td><input type="checkbox" id="checkbox-manual-{{.ID}}" {{ if .HasManual }}Checked{{end}}
+                           onchange="save_game_manual('{{.ID}}','checkbox-manual-{{.ID}}')"></td>
+            </tr>
+            <tr >
+                <td><h4>Box</h4></td>
+                <td><input type="checkbox" id="checkbox-box-{{.ID}}" {{if .HasBox}}Checked{{end}}
+                           onchange="save_game_box('{{.ID}}','checkbox-box-{{.ID}}')"></td>
+            </tr>
+            <tr>
+                <td><h4>Rating</h4></td>
+                <td>
+                    <div style="float:left" id='star_container_{{.ID}}'>{{.StarContent}}</div>
+                </td>
+            </tr>
+            <tr>
+                <td><h4>Review</h4>
+                <td><input type="text" size=20 id="review_text_{{.ID}}" placeholder="Add Review" value="{{.Review}}"></td>
+                <td><input type="button" value="Save" onclick="save_game_review({{.ID}})"></td>
+            </tr>
+        </table>
+    </td>
+</tr>
+{{ end }}

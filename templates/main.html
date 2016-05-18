@@ -1,7 +1,7 @@
 {{ define "main_html" }}
-	{{ template "header" }}
+	{{ template "header" .User}}
 <br><br><br>
 <div>
-	{{ template "consoles_list" .}}
+	{{ template "consoles_list" .Consoles}}
 </div>
 {{end}}

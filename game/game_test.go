@@ -98,7 +98,91 @@ func TestGame_Save(t *testing.T) {
 		t.Errorf("d.Year 2000 <=> %v", d.Year)
 	}
 }
+func TestGame_Delete(t *testing.T) {
+	print("Game.Delete\n")
+	user := gu(t)
+	seedGame()
+	g, err := GetGame(1, user)
+	if err != nil {
+		t.Errorf("GetGame(1,user): %s", err)
+	}
+	print("\tCan't delete if not an admin\n")
+	err = g.Delete()
+	if err == nil {
+		t.Errorf("g.Delete(): %s", err)
+	}
+	print("\tCan delete if admin\n")
+	user.SetAdmin(true)
+	user = gu(t)
+	g, err = GetGame(1, user)
+	if err != nil {
+		t.Errorf("GetGame(1,user): %s", err)
+	}
+	err = g.Delete()
+	if err != nil {
+		t.Errorf("g.Delete(): %s", err)
+	}
+	g, err = GetGame(1, user)
+	if err == nil {
+		t.Errorf("Did not delete")
+	}
+}
+func TestGame_Owners(t *testing.T) {
+	print("Game.Owners\n")
+	user := gu(t)
+	g := gg(t)
+	fmt.Printf("g.has: %v, %s", g.Has, user)
+	if g.Owners() != 1 {
+		t.Errorf("g.Owners(): 1 <=> %v", g.Owners())
+	}
+	g.Has = false
+	err := g.Save()
+	if err != nil {
+		t.Errorf("g.Save(): %s", err)
+	}
 
+}
+func TestInsertGame(t *testing.T) {
+	print("InsertGame\n")
+	seedGame()
+	user, err := auth.GetUser(1)
+	if err != nil {
+		t.Errorf("GetUser(1): %s", err)
+	}
+	con, err := GetConsole("NES", user)
+	if err != nil {
+		t.Errorf("GetConsole(NES,user): %s", err)
+	}
+	nesl, err := GetGamesByConsole(con)
+	if err != nil {
+		t.Errorf("GetGamesByConsole(): %s", err)
+	}
+	cl := len(nesl)
+	var g Game
+	g.Name = "MyNewGame"
+	g.ConsoleName = "NES"
+	g2, err := InsertGame(g)
+	if err != nil {
+		t.Errorf("InsertGame(%s): %s", g, err)
+	}
+	if g2.ConsoleName != "NES" {
+		t.Errorf("g2.ConsoleName NES <=> %s", g2.ConsoleName)
+	}
+	if g2.Name != "MyNewGame" {
+		t.Errorf("g2.Name MyNewGame <=> %s", g2.Name)
+	}
+	if g2.ID < 1 {
+		t.Errorf("g2.id: %v", g2.ID)
+	}
+	cln, err := GetGamesByConsole(con)
+	if err != nil {
+		t.Errorf("GetGamesByConsole(con): %s", err)
+	}
+	c2l := len(cln)
+	if c2l != cl+1 {
+		t.Errorf("New len (%v) != old len(%v)+1", c2l, cl)
+	}
+}
 func initGame() {
 	g, err := goconfig.ReadConfigFile("test_config")
 	db_name, err := g.GetString("DB", "db")

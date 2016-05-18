@@ -1,0 +1,56 @@
+{{define "add"}}
+{{template "header" .User}}
+<br><br>
+{{.Message}}
+<form  name="addconsole" action="/add/console" method="POST">
+    <table>
+        <tr>
+            <td><h4>Console</h4></td>
+        </tr>
+        <tr>
+            <td>Name</td><td><input type="text" name="name" size="20"></td>
+        </tr>
+        <tr>
+            <td>Manufacturer</td><td><input type="text" name="manufacturer" size="20"></td>
+        </tr>
+        <tr>
+            <td>Year</td><td><input type="text" size="5" name="year"></td>
+        </tr>
+        <tr>
+            <td>Picture</td><td><input type="text" size="20" name="picture"></td>
+        </tr>
+        <tr>
+            <td><input type="submit" value="Submit"></td>
+        </tr>
+    </table>
+</form>
+<form  name="addgame" action="/add/game" method="POST">
+    <table>
+        <tr>
+            <td><h4>Game</h4></td>
+        </tr>
+        <tr>
+            <td>Name</td><td><input type="text" name="name" size="20"></td>
+        </tr>
+        <tr>
+            <td>Publisher</td><td><input type="text" name="publisher" size="20"></td>
+        </tr>
+        <tr>
+            <td>Year</td><td><input type="text" size="5" name="year"></td>
+        </tr>
+        <tr>
+            <td>Console</td>
+            <td>
+                <select id="console" name="console">
+                    {{ range $index,$thing := .Consoles }}
+                    <option name="{{.Name}}" value="{{.Name}}">{{.Name}}</option>
+                    {{end}}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td><input type="submit" value="Submit"></td>
+        </tr>
+    </table>
+</form>
+{{end}}

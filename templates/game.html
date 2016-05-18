@@ -10,10 +10,9 @@
 <tr>
     <td><input type="checkbox" id="checkbox-{{.ID}}" {{ if .Has }}Checked{{end}} onchange="save_game_has({{.ID}},'checkbox-{{.ID}}')">
     </td>
-    <td colspan=3 onclick='$("#game_detail_{{.ID}}").toggle()' )><h3>{{ .Name }}</h3></td>
+    <td colspan=3 onclick='$("#game_detail_{{.ID}}").toggle()' )><h3>{{ .Name }}{{if .User.Admin}}<a href="/edit/game/?id={{.ID}}"><img src="/static/settings.jpeg" height="8"></a>{{end}}</h3></td>
 </tr>
 <tr>
-
 <tr id="game_detail_{{.ID}}" style="display:none">
     <td colspan="5">
         <table>
@@ -46,3 +45,48 @@
     </td>
 </tr>
 {{ end }}
+
+{{ define "edit_game" }}
+{{template "header" .User}}
+<form  name="editgame" action="/edit/game/?id={{.Game.ID}}" method="POST">
+    <input type="hidden" name="action" value="submit">
+    <table>
+        <tr>
+            <td><h4>{{.Game.Name}}</h4></td>
+        </tr>
+        <tr>
+            <td>Name</td><td><input type="text" name="name" size="20" value="{{.Game.Name}}"></td>
+        </tr>
+        <tr>
+            <td>Publisher</td><td><input type="text" name="publisher" size="20" value="{{.Game.Publisher}}"></td>
+        </tr>
+        <tr>
+            <td>Year</td><td><input type="text" size="5" name="year" value="{{.Game.Year}}"></td>
+        </tr>
+        <tr>
+            <td>Console</td>
+            <td>
+                <select id="console" name="console">
+                {{.Game.ConsoleSelect}}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td><input type="submit" value="Submit"></td>
+        </tr>
+    </table>
+</form>
+<form name="deletegame" action="/edit/game/?id={{.Game.ID}}" method="POST">
+    <input type="hidden" name="action" value="delete">
+    <input type="submit" value="Delete">
+</form>
+{{end}}
+{{define "really_delete_game"}}
+{{template "header"}}
+Really delete {{.Game.Name}}?<br>
+There are {{.Game.Owners}} games<br>
+<form name="deletegame" action="/edit/game/?id={{.Game.ID}}" method="POST">
+    <input type="hidden" name="action" value="reallydelete">
+    <input type="submit" value="Delete">
+</form>
+{{end}}

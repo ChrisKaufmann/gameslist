@@ -30,6 +30,7 @@ var (
 	stmtGetConsole       *sql.Stmt
 	stmtUpdateConsole    *sql.Stmt
 	stmtUpdateHasConsole *sql.Stmt
+	stmtDeleteConsole    *sql.Stmt
 	db                   *sql.DB
 )
 
@@ -55,6 +56,11 @@ func ConsoleDB(d *sql.DB) {
 	stmtGetUserConsoles, err = u.Sth(db, "select name,IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,'') from user_consoles where user_id=?")
 	if err != nil {
 		glog.Errorf("u.Sth(db,select IFNULL(name,0),IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,'') from user_consoles where user_id=?): %s", err)
+	}
+	delcon := "delete from consoles where name=? limit 1"
+	stmtDeleteConsole, err = u.Sth(db, delcon)
+	if err != nil {
+		glog.Fatalf("u.Sth(db,%s): %s", delcon, err)
 	}
 
 }
@@ -101,6 +107,24 @@ func (c Console) OwnedGames() int {
 		}
 	}
 	return og
+}
+func (c Console) Delete() (err error) {
+	if !c.User.Admin {
+		err = errors.New("game.Console.Delete(): User ! admin")
+		return err
+	}
+	res, err := stmtDeleteConsole.Exec(c.Name)
+	if err != nil {
+		glog.Errorf("stmtDeleteConsole.exec(%s): %s", c.Name, err)
+		return err
+	}
+	ra, err := res.RowsAffected()
+	if ra != 1 {
+		e := fmt.Sprintf("game.Consoles.Delete(): Rows affected %v", ra)
+		err = errors.New(e)
+		return err
+	}
+	return err
 }
 func (c Console) TotalGames() int {
 	gl, err := c.Games()
@@ -175,6 +199,27 @@ func GetConsoles(user auth.User) ([]Console, error) {
 
 type ConsoleName []Console
 
+type Filter []Game
+
+func (a Filter) Has(tf bool) []Game {
+	var gl []Game
+	for _, g := range a {
+		if g.Has == tf {
+			gl = append(gl, g)
+		}
+	}
+	return gl
+}
 func (a ConsoleName) Len() int           { return len(a) }
 func (a ConsoleName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ConsoleName) Less(i, j int) bool { return a[i].Name < a[j].Name }
+
+type ConsoleMeta struct {
+	Console Console
+	Games   []Game
+}
+type ConsoleMetaName []ConsoleMeta
+
+func (a ConsoleMetaName) Len() int           { return len(a) }
+func (a ConsoleMetaName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ConsoleMetaName) Less(i, j int) bool { return a[i].Console.Name < a[j].Console.Name }

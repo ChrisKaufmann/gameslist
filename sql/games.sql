@@ -4,6 +4,5 @@
  `console_name` varchar(255) DEFAULT NULL,
  `publisher` varchar(255) DEFAULT NULL,
  `year` int(10) unsigned DEFAULT NULL,
- PRIMARY KEY (`console_name`,`name`),
- KEY `IDX_GAMES_ID` (`id`)
+ PRIMARY KEY (`id`)
  ) ENGINE=InnoDB  AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;

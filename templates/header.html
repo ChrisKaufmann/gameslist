@@ -17,9 +17,11 @@
                         <input type='text' name='search_text' id='search_text' placeholder='Search'>
                     </div>
                 </td>
+                {{if .Admin}}
                 <td>
-                    <div id="add"><a href="/add"><img src="/static/add.png" height="20" id="add_img"></a></div>
+                    <div id="add"><a href="/add/"><img src="/static/add.png" height="20" id="add_img"></a></div>
                 </td>
+                {{end}}
                 <td>
                     <div id="settings"><a href="/settings"><img src='/static/settings.jpeg' id='settings_img' height="20"></a></div>
                 </td>
@@ -30,5 +32,5 @@
         </table>
     </div>
 </div>
-<br>
+<br><br>
 {{end}}

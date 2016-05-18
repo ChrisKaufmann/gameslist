@@ -87,8 +87,8 @@ func TestConsole_Save(t *testing.T) {
 		t.Errorf("d.Year 2000 <=> %v", d.Year)
 	}
 }
-func TestGetConsoles(t *testing.T) {
-	print("TestGetConsoles()\n")
+func TestConsole_Delete(t *testing.T) {
+	print("Console.Delete\n")
 	seedConsole()
 	user := gu(t)
 	cl, err := GetConsoles(user)
@@ -96,8 +96,44 @@ func TestGetConsoles(t *testing.T) {
 		t.Errorf("GetConsoles(1): %s", err)
 	}
 	lc := len(cl)
-	if lc != 13 {
-		t.Errorf("Len GetConsoles(1) 13 <=> %v", lc)
+	c, err := GetConsole("NES", user)
+	if err != nil {
+		glog.Errorf("GetConsole(NES,1): %s", err)
+	}
+	print("\tCan't delete if not an admin\n")
+	if err := c.Delete(); err == nil {
+		t.Errorf("c.Delete(): %s", err)
+	}
+	user.SetAdmin(true)
+	user = gu(t)
+	c, err = GetConsole("NES", user)
+	if err != nil {
+		glog.Errorf("GetConsole(NES,1): %s", err)
+	}
+	print("\tCan delete if an admin\n")
+	if err := c.Delete(); err != nil {
+		t.Errorf("c.Delete(): %s\n%s", err, user)
+	}
+	newcl, err := GetConsoles(user)
+	if err != nil {
+		t.Errorf("GetConsoles(user:%s): %s", user, err)
+	}
+	ncl := len(newcl)
+	if ncl != lc-1 {
+		glog.Errorf("Length of GetConsoles did not go down %v <=> %v", lc, ncl)
+	}
+}
+func TestGetConsoles(t *testing.T) {
+	print("GetConsoles()\n")
+	seedConsole()
+	user := gu(t)
+	cl, err := GetConsoles(user)
+	if err != nil {
+		t.Errorf("GetConsoles(1): %s", err)
+	}
+	lc := len(cl)
+	if lc != 31 {
+		t.Errorf("Len GetConsoles(1) 31 <=> %v", lc)
 	}
 }
 func TestConsole_Games(t *testing.T) {

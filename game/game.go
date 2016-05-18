@@ -8,6 +8,7 @@ import (
 	u "github.com/ChrisKaufmann/goutils"
 	"github.com/golang/glog"
 	"html/template"
+	"sort"
 )
 
 type Game struct {
@@ -32,6 +33,9 @@ var (
 	stmtGetUserGamesByConsole *sql.Stmt
 	stmtSearchGameNames       *sql.Stmt
 	stmtSearchUserGameNames   *sql.Stmt
+	stmtInsertGame            *sql.Stmt
+	stmtDeleteGame            *sql.Stmt
+	stmtGetOwners             *sql.Stmt
 )
 
 func GameDB(d *sql.DB) {
@@ -44,10 +48,16 @@ func GameDB(d *sql.DB) {
 		glog.Fatalf("%s: %s", sgg, err)
 	}
 
-	sug := "replace into games (id, name, console_name, publisher, year) values (?,?,?,?,?)"
+	sug := "update games set name=?, console_name=?, publisher=?, year=? where id=? limit 1"
 	stmtUpdateGame, err = u.Sth(db, sug)
 	if err != nil {
 		glog.Fatalf("u.Sth(db, %s): %s", sug, err)
+	}
+
+	sig := "insert into games (name, console_name, publisher, year) values (?,?,?,?)"
+	stmtInsertGame, err = u.Sth(db, sig)
+	if err != nil {
+		glog.Fatalf("u.Sth(db, %s): %s", sig, err)
 	}
 
 	suug := "replace into user_games (game_id, user_id, has, manual, box, rating, review) values (?,?,?,?,?,?,?)"
@@ -80,6 +90,17 @@ func GameDB(d *sql.DB) {
 		glog.Fatalf("u.Sth(db, %s): %s", sgugsearch, err)
 	}
 
+	sdelgame := "delete from games where id=? limit 1"
+	stmtDeleteGame, err = u.Sth(db, sdelgame)
+	if err != nil {
+		glog.Fatalf("u.Sth(db, %s): %s", sdelgame, err)
+	}
+
+	sgetowners := "select count(*) from user_games where game_id=?"
+	stmtGetOwners, err = u.Sth(db, sgetowners)
+	if err != nil {
+		glog.Fatalf("u.Sth(db, %s): %s", sgetowners, err)
+	}
 }
 func (g Game) String() string {
 	return fmt.Sprintf("ID: %v\nName: %s\nConsoleName: %s\nManufacturer: %s\nYear: %v\nUserID: %v\nHas: %v\nHasManual: %v\nHasBox: %v\nRating: %v\nReview: %s\n", g.ID, g.Name, g.ConsoleName, g.Publisher, g.Year, g.User.ID, g.Has, g.HasManual, g.HasBox, g.Rating, g.Review)
@@ -93,7 +114,7 @@ func (g Game) Save() (err error) {
 		glog.Errorf("Invalid UserID in game.save(): %v", g.User.ID)
 		return errors.New("game.Save: Invalid UserID")
 	}
-	_, err = stmtUpdateGame.Exec(g.ID, g.Name, g.ConsoleName, g.Publisher, g.Year)
+	_, err = stmtUpdateGame.Exec(g.Name, g.ConsoleName, g.Publisher, g.Year, g.ID)
 	if err != nil {
 		glog.Errorf("stmtUpdateGame.Exec(%v,%s,%s,%s,%v): %s", g.ID, g.Name, g.ConsoleName, g.Publisher, g.Year, err)
 		return err
@@ -104,6 +125,26 @@ func (g Game) Save() (err error) {
 		return err
 	}
 	return err
+}
+func (g Game) ConsoleSelect() template.HTML {
+	var h string
+	cl, err := GetConsoles(g.User)
+	if err != nil {
+		glog.Errorf("GetConsoles(%s): %s", g.User, err)
+		return template.HTML("")
+	}
+	sort.Sort(ConsoleName(cl))
+	for _, b := range cl {
+		if b.Name == "" {
+			continue
+		}
+		s := ""
+		if g.ConsoleName == b.Name {
+			s = "selected"
+		}
+		h = h + fmt.Sprintf(" <option value=\"%s\" %s>%s</option>", b.Name, s, b.Name)
+	}
+	return template.HTML(h)
 }
 func (g Game) StarContent() template.HTML {
 	var r string
@@ -119,6 +160,55 @@ func (g Game) StarContent() template.HTML {
 	}
 	return template.HTML(r)
 }
+func (g Game) Delete() (err error) {
+	if !g.User.Admin {
+		err = errors.New("game.Game.Delete(): User != admin")
+		return err
+	}
+	res, err := stmtDeleteGame.Exec(g.ID)
+	if err != nil {
+		glog.Errorf("stmtDeleteGame.Exec(%v): %s", g.ID, err)
+		return err
+	}
+	ra, err := res.RowsAffected()
+	if err != nil {
+		glog.Errorf("res.RowsAffected(): %s", err)
+	}
+	if ra != 1 {
+		e := fmt.Sprintf("game.Game.Delete(): Rows affected: %v", ra)
+		err = errors.New(e)
+		glog.Errorf("%s", err)
+	}
+	return err
+}
+func (g Game) Owners() int {
+	var retval string
+	err := stmtGetOwners.QueryRow(g.ID).Scan(&retval)
+	if err != nil {
+		glog.Errorf("stmtGetOwners.QueryRow(%v): %s", g.ID, err)
+	}
+	return u.Toint(retval)
+}
+
+func InsertGame(g Game) (Game, error) {
+	var err error
+	if g.ConsoleName == "" {
+		err = errors.New("Game.Insert: Invalid ConsoleName")
+		glog.Errorf("%s", err)
+		return g, err
+	}
+	result, err := stmtInsertGame.Exec(g.Name, g.ConsoleName, g.Publisher, g.Year)
+	if err != nil {
+		glog.Errorf("InsertGame(%s): %s", g, err)
+		return g, err
+	}
+	lid, err := result.LastInsertId()
+	if err != nil {
+		glog.Errorf("Game.Insert(): %s", err)
+	}
+	g.ID = int(lid)
+	return g, err
+}
 func GetGame(id int, user auth.User) (Game, error) {
 	var g Game
 	var err error
@@ -128,7 +218,8 @@ func GetGame(id int, user auth.User) (Game, error) {
 	err = stmtGetGame.QueryRow(id, id, user.ID).Scan(&g.ID, &g.Name, &g.ConsoleName, &g.Publisher, &g.Year, &g.User.ID, &g.Has, &g.HasManual, &g.HasBox, &g.Rating, &g.Review)
 	g.User = user
 	if err != nil {
-		glog.Errorf("stmtGetGame(%v, %v, %s): %s", id, id, user.ID, err)
+		e := fmt.Sprintf("GetGame(%v,%s): %s", id, user, err)
+		err = errors.New(e)
 	}
 	return g, err
 }

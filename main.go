@@ -79,6 +79,8 @@ func main() {
 	http.HandleFunc("/share/", handleShared)
 	http.HandleFunc("/console/", handleConsole)
 	http.HandleFunc("/demo", handleDemo)
+	http.HandleFunc("/add/", handleAdd)
+	http.HandleFunc("/edit/", handleEdit)
 	http.HandleFunc("/set/game/", handleSetGame)
 	http.HandleFunc("/set/console/", handleSetConsole)
 	http.HandleFunc("/", handleRoot)
@@ -114,7 +116,14 @@ func handleMain(w http.ResponseWriter, r *http.Request) {
 		glog.Errorf("game.GetConsoles(%v): %s", user, err)
 	}
 	sort.Sort(game.ConsoleName(cl))
-	if err := tmpl.ExecuteTemplate(w, "main_html", cl); err != nil {
+	type Meta struct {
+		User     auth.User
+		Consoles []game.Console
+	}
+	var m Meta
+	m.User = user
+	m.Consoles = cl
+	if err := tmpl.ExecuteTemplate(w, "main_html", m); err != nil {
 		glog.Errorf("tmpl.ExecuteTemplate(w, main_html, cl): %s", err)
 	}
 	fmt.Printf("path: %s\n", r.URL)
@@ -159,7 +168,13 @@ func handleConsole(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	if err := tmpl.ExecuteTemplate(w, "main_html", nil); err != nil {
+	type Meta struct {
+		User     auth.User
+		Consoles []game.Console
+	}
+	var m Meta
+	m.User = user
+	if err := tmpl.ExecuteTemplate(w, "main_html", m); err != nil {
 		glog.Errorf("Execute main_html: %s", err)
 		return
 	}
@@ -264,6 +279,178 @@ func handleSetGame(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Printf("handleSetGame %v\n", time.Now().Sub(t0))
 }
+func handleAdd(w http.ResponseWriter, r *http.Request) {
+	t0 := time.Now()
+	loggedin, user := auth.LoggedIn(w, r)
+	if !loggedin {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	if !user.Admin {
+		glog.Errorf("user %s attempting to add, not an admin", user)
+		return
+	}
+	var cg string
+	u.PathVars(r, "/add/", &cg)
+	type Meta struct {
+		User     auth.User
+		Message  template.HTML
+		Consoles []game.Console
+	}
+	var meta Meta
+	meta.User = user
+	cl, err := game.GetConsoles(user)
+	meta.Consoles = cl
+	sort.Sort(game.ConsoleName(cl))
+	if err != nil {
+		glog.Errorf("game.GetConsoles(%s): %s", user, err)
+	}
+	switch cg {
+	case "console":
+		var c game.Console
+		c.Name = r.PostFormValue("name")
+		c.Manufacturer = r.PostFormValue("manufacturer")
+		c.Year = u.Toint(r.PostFormValue("year"))
+		c.User = user
+		c.Picture = r.PostFormValue("picture")
+		err := c.Save()
+		if err != nil {
+			glog.Errorf("Saving console (%s): %s", c, err)
+			meta.Message = template.HTML(err.Error())
+		} else {
+			meta.Message = template.HTML("Saved")
+		}
+	case "game":
+		var g game.Game
+		g.Name = r.PostFormValue("name")
+		g.Publisher = r.PostFormValue("publisher")
+		g.Year = u.Toint(r.PostFormValue("year"))
+		g.ConsoleName = r.PostFormValue("console")
+		g.User = user
+		g, err := game.InsertGame(g)
+		if err != nil {
+			glog.Errorf("Saving game (%s): %s", g, err)
+			meta.Message = "Error saving"
+		} else {
+			meta.Message = template.HTML("Saved: <a href='/game/" + u.Tostr(g.ID) + "'>Game</a>")
+		}
+	}
+	if err := tmpl.ExecuteTemplate(w, "add", meta); err != nil {
+		glog.Errorf("ExecuteTemplate(w,add,meta): %s", err)
+	}
+	fmt.Printf("handleAdd %v\n", time.Now().Sub(t0))
+}
+func handleEdit(w http.ResponseWriter, r *http.Request) {
+	t0 := time.Now()
+	loggedin, user := auth.LoggedIn(w, r)
+	if !loggedin {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	if !user.Admin {
+		glog.Errorf("user %s attempting to add, not an admin", user)
+		return
+	}
+	var cg string
+	u.PathVars(r, "/edit/", &cg)
+	switch cg {
+	case "console":
+		c, err := game.GetConsole(r.FormValue("name"), user)
+		if err != nil {
+			glog.Errorf("GetConsole(%s,user): %s", r.PostFormValue("name"), err)
+		}
+		type Meta struct {
+			User    auth.User
+			Message template.HTML
+			Console game.Console
+		}
+		var meta Meta
+		meta.User = user
+		meta.Console = c
+		switch r.PostFormValue("action") {
+		case "submit":
+			c.Name = r.PostFormValue("name")
+			c.Manufacturer = r.PostFormValue("manufacturer")
+			c.Year = u.Toint(r.PostFormValue("year"))
+			c.Picture = r.PostFormValue("picture")
+			if err := c.Save(); err != nil {
+				glog.Errorf("Saving console (%s): %s", c, err)
+				meta.Message = template.HTML(err.Error())
+			} else {
+				meta.Message = template.HTML("Saved")
+			}
+			meta.Console = c
+			if err := tmpl.ExecuteTemplate(w, "edit_console", meta); err != nil {
+				glog.Errorf("ExecuteTemplate(w,edit_console,meta): %s", err)
+			}
+		case "delete":
+			if err := tmpl.ExecuteTemplate(w, "really_delete_console", meta); err != nil {
+				glog.Errorf("ExecuteTemplate(w,really_delete_console,meta): %s", err)
+				return
+			}
+		case "reallydelete":
+			err := c.Delete()
+			if err != nil {
+				glog.Errorf("c.Delete(): %s", err)
+			}
+			http.Redirect(w, r, "/", http.StatusFound)
+		default:
+			if err := tmpl.ExecuteTemplate(w, "edit_console", meta); err != nil {
+				glog.Errorf("ExecuteTemplate(w,edit_console,meta): %s", err)
+			}
+		}
+	case "game":
+		id := u.Toint(r.FormValue("id"))
+		g, err := game.GetGame(id, user)
+		if err != nil {
+			glog.Errorf("game.GetGame(%v,user): %s", id, err)
+			return
+		}
+		type Meta struct {
+			User    auth.User
+			Game    game.Game
+			Message template.HTML
+		}
+		var meta Meta
+		meta.User = user
+		meta.Game = g
+		switch r.PostFormValue("action") {
+		case "submit":
+			g.Name = r.PostFormValue("name")
+			g.Publisher = r.PostFormValue("publisher")
+			g.Year = u.Toint(r.PostFormValue("year"))
+			g.ConsoleName = r.PostFormValue("console")
+			if err := g.Save(); err != nil {
+				glog.Errorf("Saving game (%s): %s", g, err)
+				meta.Message = "Error saving"
+			} else {
+				fmt.Printf("Saved game: %s", g)
+				meta.Message = template.HTML("Saved: <a href='/game/" + u.Tostr(g.ID) + "'>Game</a>")
+			}
+			meta.Game = g
+		case "delete":
+			if err := tmpl.ExecuteTemplate(w, "really_delete_game", meta); err != nil {
+				glog.Errorf("ExecuteTemplate(w,really_delete_game,meta): %s", err)
+				return
+			}
+		case "reallydelete":
+			err := g.Delete()
+			if err != nil {
+				glog.Errorf("g.Delete(): %s", err)
+			}
+			http.Redirect(w, r, "/", http.StatusFound)
+
+		default:
+			meta.Message = template.HTML("in default")
+		}
+		if err := tmpl.ExecuteTemplate(w, "edit_game", meta); err != nil {
+			glog.Errorf("ExecuteTemplate(w,edit_game, meta): %s", err)
+			return
+		}
+	}
+	fmt.Printf("handleEdit %v\n", time.Now().Sub(t0))
+}
+
 func handleSetConsole(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	loggedin, user := auth.LoggedIn(w, r)
@@ -347,22 +534,11 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	/*
-		coll, err := game.GetCollection(user)
-		if err != nil {
-			glog.Errorf("handleSearch.game.GetCollection(%v): %s",user, err)
-			return
-		}
-		ss := r.FormValue("query")
-		tl,err := game.Search(ss)
-		if err != nil { glog.Errorf("game.Search(%s): %s", ss, err);return }
-		fmt.Fprintf(w,"<table>\n")
-		//PrintListOfThings(w,coll,tl)
-	*/
 	cml := make(map[string][]game.Game)
-	type ConsoleMeta struct {
-		Console game.Console
-		Games   []game.Game
+	type Meta struct {
+		ConsoleMeta []game.ConsoleMeta
+		User        auth.User
+		Search      string
 	}
 	gl, err := game.SearchGames(r.FormValue("query"), user)
 	if err != nil {
@@ -373,16 +549,21 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 		cml[g.ConsoleName] = append(cml[g.ConsoleName], g)
 	}
 	cl, err := game.GetConsoles(user)
-	var sm []ConsoleMeta
+	var sm []game.ConsoleMeta
 	for _, c := range cl {
 		if len(cml[c.Name]) > 0 {
-			var cm ConsoleMeta
+			var cm game.ConsoleMeta
 			cm.Console = c
 			cm.Games = cml[c.Name]
 			sm = append(sm, cm)
 		}
 	}
-	if err := tmpl.ExecuteTemplate(w, "search", sm); err != nil {
+	sort.Sort(game.ConsoleMetaName(sm))
+	var meta Meta
+	meta.User = user
+	meta.ConsoleMeta = sm
+	meta.Search = r.FormValue("query")
+	if err := tmpl.ExecuteTemplate(w, "search", meta); err != nil {
 		glog.Errorf("ExecuteTemplate: %s", err)
 	}
 	fmt.Printf("handleSearch %v\n", time.Now().Sub(t0))

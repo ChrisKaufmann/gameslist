@@ -3,7 +3,12 @@
     <a href="/console/{{.Name}}"><div id="console-{{.ShortName}}-picture"><img src="{{.Picture}}" height="10%"></a></div>
     <div id="console-{{.ShortName}}-name">
         <input type="checkbox" id="checkbox-{{.ShortName}}" {{ if .Has }}Checked{{end}} onchange="save_console_has({{.Name}},'checkbox-{{.ShortName}}')">
-            {{.Name}} {{.OwnedGames}}/{{.TotalGames}}</div>
+            {{.Name}} {{.OwnedGames}}/{{.TotalGames}}
+        {{if .User.Admin}}
+        <a href="/edit/console/?name={{.Name}}"><img src="/static/settings.jpeg" height="1%"></a>
+        {{end}}
+    </div>
+    <div id="manyear{{.ShortName}}">{{if .Manufacturer}}{{.Manufacturer}}{{end}}  {{if .Year}}{{.Year}}{{end}}</div>
     Manual: {{if .HasManual}}
         Y/<a href="/set/console/?name={{.Name}}&action=hasnot_manual&value=false">n</a>
     {{else}}
@@ -27,3 +32,43 @@
     {{ end }}
 </table>
 {{ end }}
+{{ define "edit_console"}}
+{{template "header"}}
+<form  name="editconsole" action="/edit/console/?name={{.Console.Name}}" method="POST">
+    {{.Message}}
+    <input type="hidden" name="action" value="submit">
+    <table>
+        <tr>
+            <td><h4>{{.Console.Name}}</h4></td>
+        </tr>
+        <tr>
+            <td>Name</td><td><input type="text" name="name" size="20" value="{{.Console.Name}}"></td>
+        </tr>
+        <tr>
+            <td>Publisher</td><td><input type="text" name="manufacturer" size="20" value="{{.Console.Manufacturer}}"></td>
+        </tr>
+        <tr>
+            <td>Year</td><td><input type="text" size="5" name="year" value="{{.Console.Year}}"></td>
+        </tr>
+        <tr>
+            <td>Picture</td><td><input type="text" size="20" name="picture" value="{{.Console.Picture}}"></td>
+        </tr>
+        <tr>
+            <td><input type="submit" value="Submit"></td>
+        </tr>
+    </table>
+</form>
+<form name="deleteconsole" action="/edit/console/?name={{.Console.Name}}" method="POST">
+    <input type="hidden" name="action" value="delete">
+    <input type="submit" value="Delete">
+</form>
+{{end}}
+{{define "really_delete_console"}}
+    {{template "header"}}
+Really delete {{.Console.Name}}?<br>
+There are {{.Console.TotalGames}} games<br>
+<form name="deleteconsole" action="/edit/console/?name={{.Console.Name}}" method="POST">
+    <input type="hidden" name="action" value="reallydelete">
+    <input type="submit" value="Delete">
+</form>
+{{end}}

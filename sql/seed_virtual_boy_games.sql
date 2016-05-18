@@ -1,0 +1,14 @@
+replace into games (name,publisher,year,console_name) values ("3D Tetris","T&E Soft","1996","Virtual Boy");
+replace into games (name,publisher,year,console_name) values ("Bomberman: Panic Bombe","Hudson Soft","1995","Virtual Boy");
+replace into games (name,publisher,year,console_name) values ("Galactic Pinball","Intelligent Systems","1995","Virtual Boy");
+replace into games (name,publisher,year,console_name) values ("Golf","T&E Soft","1995","Virtual Boy");
+replace into games (name,publisher,year,console_name) values ("Jack Bros.","Atlus","1995","Virtual Boy");
+replace into games (name,publisher,year,console_name) values ("Mario Clash","Nintendo R&D1","1995","Virtual Boy");
+replace into games (name,publisher,year,console_name) values ("Mario's Tennis","Nintendo R&D1"," 1995","Virtual Boy");
+replace into games (name,publisher,year,console_name) values ("Nester's Funky Bowling","Satffire","1996","Virtual Boy");
+replace into games (name,publisher,year,console_name) values ("Red Alarm","T&E Soft","1995","Virtual Boy");
+replace into games (name,publisher,year,console_name) values ("Teleroboxer","Nintendo R&D1","1995","Virtual Boy");
+replace into games (name,publisher,year,console_name) values ("Vertical Force","Hudson Soft","1995","Virtual Boy");
+replace into games (name,publisher,year,console_name) values ("Virtual Boy Wario Land"," Nintendo R&D1","1995","Virtual Boy");
+replace into games (name,publisher,year,console_name) values ("Virtual League Baseball","Kemco","1995","Virtual Boy");
+replace into games (name,publisher,year,console_name) values ("Waterworld","Ocean of America","1995","Virtual Boy");

@@ -27,7 +27,7 @@ replace into consoles (name, manufacturer, year,picture) values
 ('Playstation 3','Sony','','/static/Consoles/PS3-Fat-Console-Set.jpg'),
 ('Playstation 4','Sony','','/static/Consoles/PS4-Console-wDS4.jpg'),
 ('Playstation Vita','Sony','','/static/Consoles/PlayStation-Vita-1101-FL.jpg'),
-('VirtualBoy','Nintendo','','/static/Consoles/Virtual-Boy-Set.jpg'),
+('Virtual Boy','Nintendo','','/static/Consoles/Virtual-Boy-Set.jpg'),
 ('Sega Saturn','Sega','','/static/Consoles/Sega-Saturn-Console-Set-Mk2.jpg'),
 ('Wii','Nintendo','','/static/Consoles/Wii-console.jpg')
 

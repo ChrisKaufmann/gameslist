@@ -199,17 +199,6 @@ func GetConsoles(user auth.User) ([]Console, error) {
 
 type ConsoleName []Console
 
-type Filter []Game
-
-func (a Filter) Has(tf bool) []Game {
-	var gl []Game
-	for _, g := range a {
-		if g.Has == tf {
-			gl = append(gl, g)
-		}
-	}
-	return gl
-}
 func (a ConsoleName) Len() int           { return len(a) }
 func (a ConsoleName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ConsoleName) Less(i, j int) bool { return a[i].Name < a[j].Name }

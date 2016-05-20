@@ -142,6 +142,61 @@ func TestGame_Owners(t *testing.T) {
 	}
 
 }
+func TestSearchGames(t *testing.T) {
+	print("SearchGames\n")
+	seedGame()
+	user := gu(t)
+	var ng Game
+	ng.User = user
+	ng.Name = "testsearchgame"
+	ng.ConsoleName = "NES"
+	ng.Has = true
+	ng.HasBox = true
+	ng.HasManual = true
+	ng.Rating = 3
+	ng.Publisher = "mypublisher"
+	ng.Review = "es muy bueno"
+	_, err := InsertGame(ng)
+	if err != nil {
+		t.Errorf("ng.Save(): %s", err)
+	}
+	gl, err := SearchGames("testsearchgame", user)
+	if err != nil {
+		t.Errorf("SearchGames(testsearchgame,user): %s", err)
+	}
+	if len(gl) != 1 {
+		t.Errorf("length SearchGames(testsearchgame,user): 1 <=> %v", len(gl))
+	}
+	g := gl[0]
+	if g.Has != true {
+		t.Errorf("g.Has true <=> %v", g.Has)
+	}
+	if g.HasBox != true {
+		t.Errorf("g.HasBox true <=> %v", g.HasBox)
+	}
+	if g.HasManual != true {
+		t.Errorf("g.HasManual true <=> %v", g.HasManual)
+	}
+	if g.Name != "testsearchgame" {
+		t.Errorf("g.Name testsearchgame <=> %v", g.Name)
+	}
+	if g.ConsoleName != "NES" {
+		t.Errorf("g.ConsoleName NES <=> %s", g.ConsoleName)
+	}
+	if g.User.ID != 1 {
+		t.Errorf("g.User.ID 1 <=> %v", g.User.ID)
+	}
+	if g.Rating != 3 {
+		t.Errorf("g.Rating 3 <=> %v", g.Rating)
+	}
+	if g.Review != "es muy bueno" {
+		t.Errorf("g.Review 'es muy bueno' <=> %v", g.Review)
+	}
+	if g.Publisher != "mypublisher" {
+		t.Errorf("g.Publisher 'mypublisher' <=> %v", g.Publisher)
+	}
+
+}
 func TestInsertGame(t *testing.T) {
 	print("InsertGame\n")
 	seedGame()

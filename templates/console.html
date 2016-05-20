@@ -3,7 +3,7 @@
     <a href="/console/{{.Name}}"><div id="console-{{.ShortName}}-picture"><img src="{{.Picture}}" height="10%"></a></div>
     <div id="console-{{.ShortName}}-name">
         <input type="checkbox" id="checkbox-{{.ShortName}}" {{ if .Has }}Checked{{end}} onchange="save_console_has({{.Name}},'checkbox-{{.ShortName}}')">
-            {{.Name}} {{.OwnedGames}}/{{.TotalGames}}
+            {{.Name}} {{.OwnedGames}}{{if .TotalGames}}/{{.TotalGames}}{{end}}
         {{if .User.Admin}}
         <a href="/edit/console/?name={{.Name}}"><img src="/static/settings.jpeg" height="1%"></a>
         {{end}}
@@ -32,6 +32,7 @@
     {{ end }}
 </table>
 {{ end }}
+
 {{ define "edit_console"}}
 {{template "header"}}
 <form  name="editconsole" action="/edit/console/?name={{.Console.Name}}" method="POST">

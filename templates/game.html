@@ -81,6 +81,7 @@
     <input type="submit" value="Delete">
 </form>
 {{end}}
+
 {{define "really_delete_game"}}
 {{template "header"}}
 Really delete {{.Game.Name}}?<br>
@@ -89,4 +90,18 @@ There are {{.Game.Owners}} games<br>
     <input type="hidden" name="action" value="reallydelete">
     <input type="submit" value="Delete">
 </form>
+{{end}}
+
+{{define "filter"}}
+<div id="filter_div">
+    <form name="filter">
+
+    <tr>
+        <td>Filter by:</td>
+        <td>Has:<input type="checkbox" id="filter_has" {{if .Has}}checked{{end}} onchange="setfilter('{{.Url}}',this)"></td>
+        <td>Box:<input type="checkbox" id="filter_box" {{if .Box}}checked{{end}} onchange="setfilter('{{.Url}}',this)"></td>
+        <td>Manual:<input type="checkbox" id="filter_manual" {{if .Manual}}checked{{end}} onchange="setfilter('{{.Url}}',this)"></td>
+    </tr>
+    </form>
+</div>
 {{end}}

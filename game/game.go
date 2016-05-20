@@ -8,6 +8,7 @@ import (
 	u "github.com/ChrisKaufmann/goutils"
 	"github.com/golang/glog"
 	"html/template"
+	"net/http"
 	"sort"
 )
 
@@ -36,6 +37,7 @@ var (
 	stmtInsertGame            *sql.Stmt
 	stmtDeleteGame            *sql.Stmt
 	stmtGetOwners             *sql.Stmt
+	stmtGetUserGames          *sql.Stmt
 )
 
 func GameDB(d *sql.DB) {
@@ -100,6 +102,12 @@ func GameDB(d *sql.DB) {
 	stmtGetOwners, err = u.Sth(db, sgetowners)
 	if err != nil {
 		glog.Fatalf("u.Sth(db, %s): %s", sgetowners, err)
+	}
+
+	sgug := "select games.id, games.name, games.console_name, IFNULL(games.publisher,''), IFNULL(games.year,0),IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,'') from games, user_games where games.id = user_games.game_id and user_games.user_id=?"
+	stmtGetUserGames, err = u.Sth(db, sgug)
+	if err != nil {
+		glog.Fatalf("u.Sth(db, %s): %s", sgug, err)
 	}
 }
 func (g Game) String() string {
@@ -205,8 +213,12 @@ func InsertGame(g Game) (Game, error) {
 	lid, err := result.LastInsertId()
 	if err != nil {
 		glog.Errorf("Game.Insert(): %s", err)
+		return g, err
 	}
 	g.ID = int(lid)
+	if err := g.Save(); err != nil {
+		glog.Errorf("g.Save(): %s", err)
+	}
 	return g, err
 }
 func GetGame(id int, user auth.User) (Game, error) {
@@ -301,7 +313,6 @@ func SearchGames(ss string, user auth.User) ([]Game, error) {
 		gl = append(gl, g)
 	}
 	return gl, err
-
 }
 
 type GameName []Game
@@ -309,3 +320,64 @@ type GameName []Game
 func (a GameName) Len() int           { return len(a) }
 func (a GameName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a GameName) Less(i, j int) bool { return a[i].Name < a[j].Name }
+
+type Filter []Game
+
+func (a Filter) Has(tf bool) []Game {
+	var gl []Game
+	for _, g := range a {
+		if g.Has == tf {
+			gl = append(gl, g)
+		}
+	}
+	return gl
+}
+func (a Filter) Box(tf bool) []Game {
+	var gl []Game
+	for _, g := range a {
+		if g.HasBox == tf {
+			gl = append(gl, g)
+		}
+	}
+	return gl
+}
+func (a Filter) Manual(tf bool) []Game {
+	var gl []Game
+	for _, g := range a {
+		if g.HasManual == tf {
+			gl = append(gl, g)
+		}
+	}
+	return gl
+}
+
+func (a Filter) Request(r *http.Request) []Game {
+	if r.FormValue("has") == "true" {
+		a = Filter(a).Has(true)
+	}
+	if r.FormValue("box") == "true" {
+		a = Filter(a).Box(true)
+	}
+	if r.FormValue("manual") == "true" {
+		a = Filter(a).Manual(true)
+	}
+	return a
+}
+
+func UserGames(user auth.User) []Game {
+	var gl []Game
+	var err error
+	rows, err := stmtGetUserGames.Query(user.ID)
+	if err != nil {
+		glog.Errorf("stmtGetUserGames(%v): %s", user.ID, err)
+		return gl
+	}
+	for rows.Next() {
+		var g Game
+		rows.Scan(&g.ID, &g.Name, &g.ConsoleName, &g.Publisher, &g.Year, &g.Has, &g.HasManual, &g.HasBox, &g.Rating, &g.Review)
+		g.User = user
+		gl = append(gl, g)
+	}
+	return gl
+
+}

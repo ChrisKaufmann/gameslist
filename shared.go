@@ -8,13 +8,12 @@ import (
 	"github.com/golang/glog"
 	"html/template"
 	"net/http"
+	"sort"
 	"time"
 )
 
 var (
-	ShareMain             = template.Must(template.ParseFiles("templates/ShareMain.html"))
-	ReadTableEntryConsole = template.Must(template.ParseFiles("templates/ReadTableEntryConsole.html"))
-	ReadTableEntryGame    = template.Must(template.ParseFiles("templates/ReadTableEntryGame.html"))
+	sharedtmpl = template.Must(template.ParseGlob("templates/shared.html"))
 )
 
 func handleShared(w http.ResponseWriter, r *http.Request) {
@@ -22,30 +21,30 @@ func handleShared(w http.ResponseWriter, r *http.Request) {
 	var sid string
 	u.PathVars(r, "/share/", &sid)
 
-	suser, err := auth.GetUserByShared(sid)
+	user, err := auth.GetUserByShared(sid)
 	if err != nil {
 		glog.Errorf("handleShared - auth.GetUserByShared(%s): %s", sid, err)
 		return
 	}
-
-	cons, err := game.GetConsoles(suser)
-	if err != nil {
-		glog.Errorf("handleShared - game.GetAllConsoles(): %s", err)
-		return
+	cml := make(map[string][]game.Game)
+	gl := game.UserGames(user)
+	sort.Sort(game.GameName(gl))
+	for _, g := range gl {
+		cml[g.ConsoleName] = append(cml[g.ConsoleName], g)
 	}
-
-	m := make(map[game.Console][]game.Game)
-	for _, c := range cons {
-		gl, err := c.Games()
-		if err != nil {
-			glog.Errorf("c.Games(): %s", err)
-			return
-		}
-		for _, g := range gl {
-			if g.Has {
-				m[c] = append(m[c], g)
-			}
+	cl, err := game.GetConsoles(user)
+	var sm []game.ConsoleMeta
+	for _, c := range cl {
+		if len(cml[c.Name]) > 0 {
+			var cm game.ConsoleMeta
+			cm.Console = c
+			cm.Games = cml[c.Name]
+			sm = append(sm, cm)
 		}
 	}
+	sort.Sort(game.ConsoleMetaName(sm))
+
+	sharedtmpl.ExecuteTemplate(w, "shared", sm)
+
 	fmt.Printf("handleShared %v\n", time.Now().Sub(t0))
 }

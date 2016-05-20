@@ -67,8 +67,20 @@ function searchthings(ss)
 {
     window.location.replace("/search/?query="+ss)
 }
-function add_console(form)
-{
+function setfilter(url,form) {
+    var filterstring=""
+    if (document.getElementById("filter_has").checked) {
+        filterstring=filterstring+"has=true";
+    }
+    if (document.getElementById("filter_box").checked) {
+        filterstring=filterstring+"&box=true";
+    }
+    if (document.getElementById("filter_manual").checked) {
+        filterstring=filterstring+"&manual=true";
+    }
+    window.location.replace(url+filterstring)
+}
+function add_console(form) {
 	$('menu_status').innerHTML='Adding...';
 	var newcon =form.add_console_text.value;
 	$.ajax({type: "GET",url: '/console/new/'+newcon,success:function(html){

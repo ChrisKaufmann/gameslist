@@ -1,0 +1,24 @@
+{{ define "shared"}}
+    <table>
+        <tr>
+            <td>Console:</td>
+            <td>Game:</td>
+            <td>Box?</td>
+            <td>Manual?</td>
+        </tr>
+        {{ range $index, $val := .}}
+        <tr>
+            <td>{{.Console.Name}}</td>
+        </tr>
+            {{ range $index, $val := .Games}}
+            <tr>
+                <td></td>
+                <td>{{.Name}}</td>
+                <td>{{if .HasBox}}B{{end}}</td>
+                <td>{{if .HasManual}}M{{end}}</td>
+            </tr>
+            {{end}}
+        {{end}}
+
+    </table>
+{{end}}

@@ -1,7 +1,7 @@
 {{ define "search" }}
 {{ template "header" .User}}
+{{ template "filter" .}}
 <table>
-
 {{ range $index,$val := .ConsoleMeta }}
 <tr>
     <td>{{template "console_entry" .Console}}</td>

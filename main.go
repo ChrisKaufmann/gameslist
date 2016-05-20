@@ -171,6 +171,10 @@ func handleConsole(w http.ResponseWriter, r *http.Request) {
 	type Meta struct {
 		User     auth.User
 		Consoles []game.Console
+		Url      string
+		Has      bool
+		Box      bool
+		Manual   bool
 	}
 	var m Meta
 	m.User = user
@@ -180,6 +184,8 @@ func handleConsole(w http.ResponseWriter, r *http.Request) {
 	}
 	var cname string
 	u.PathVars(r, "/console/", &cname)
+	m.Url = "/console/" + cname + "?"
+
 	c, err := game.GetConsole(cname, user)
 	fmt.Printf("console=%s", c)
 	if err != nil {
@@ -195,13 +201,26 @@ func handleConsole(w http.ResponseWriter, r *http.Request) {
 		glog.Errorf("ConsoleOnlyEntryHTML.Execute(w,myc): %s", err)
 	}
 	cg, err := c.Games()
+	if err != nil {
+		glog.Errorf("c.Games(): %s", err)
+		return
+	}
 	switch r.FormValue("sort") {
 	default:
 		sort.Sort(game.GameName(cg))
 	}
-	if err != nil {
-		glog.Errorf("c.Games(): %s", err)
-		return
+	if r.FormValue("has") == "true" {
+		m.Has = true
+	}
+	if r.FormValue("box") == "true" {
+		m.Box = true
+	}
+	if r.FormValue("manual") == "true" {
+		m.Manual = true
+	}
+	cg = game.Filter(cg).Request(r)
+	if err := tmpl.ExecuteTemplate(w, "filter", m); err != nil {
+		glog.Errorf("tmpl.ExecuteTemplate(w,filter,meta): %s", err)
 	}
 	if err := tmpl.ExecuteTemplate(w, "games_list", cg); err != nil {
 		glog.Errorf("tmpl.ExecuteTemplate(w, games_list, cg): %s", err)
@@ -539,12 +558,29 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 		ConsoleMeta []game.ConsoleMeta
 		User        auth.User
 		Search      string
+		Url         string
+		Has         bool
+		Box         bool
+		Manual      bool
 	}
+	var meta Meta
+	meta.User = user
+	meta.Url = "/search/?query=" + r.FormValue("query") + "&"
 	gl, err := game.SearchGames(r.FormValue("query"), user)
 	if err != nil {
 		glog.Errorf("game.SearchGames(%s, user): %s", r.FormValue("query"), err)
 	}
 	sort.Sort(game.GameName(gl))
+	if r.FormValue("has") == "true" {
+		meta.Has = true
+	}
+	if r.FormValue("box") == "true" {
+		meta.Box = true
+	}
+	if r.FormValue("manual") == "true" {
+		meta.Manual = true
+	}
+	gl = game.Filter(gl).Request(r)
 	for _, g := range gl {
 		cml[g.ConsoleName] = append(cml[g.ConsoleName], g)
 	}
@@ -559,8 +595,6 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	sort.Sort(game.ConsoleMetaName(sm))
-	var meta Meta
-	meta.User = user
 	meta.ConsoleMeta = sm
 	meta.Search = r.FormValue("query")
 	if err := tmpl.ExecuteTemplate(w, "search", meta); err != nil {

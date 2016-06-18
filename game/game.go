@@ -10,6 +10,8 @@ import (
 	"html/template"
 	"net/http"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 type Game struct {
@@ -24,26 +26,29 @@ type Game struct {
 	HasBox      bool
 	Rating      int
 	Review      string
+	Want        bool
 }
 
 var (
-	stmtGetGame               *sql.Stmt
-	stmtUpdateGame            *sql.Stmt
-	stmtUpdateUserGame        *sql.Stmt
-	stmtGetGameByConsole      *sql.Stmt
-	stmtGetUserGamesByConsole *sql.Stmt
-	stmtSearchGameNames       *sql.Stmt
-	stmtSearchUserGameNames   *sql.Stmt
-	stmtInsertGame            *sql.Stmt
-	stmtDeleteGame            *sql.Stmt
-	stmtGetOwners             *sql.Stmt
-	stmtGetUserGames          *sql.Stmt
+	stmtGetGame                 *sql.Stmt
+	stmtUpdateGame              *sql.Stmt
+	stmtUpdateUserGame          *sql.Stmt
+	stmtGetGameByConsole        *sql.Stmt
+	stmtGetUserGamesByConsole   *sql.Stmt
+	stmtSearchGameNames         *sql.Stmt
+	stmtSearchUserGameNames     *sql.Stmt
+	stmtInsertGame              *sql.Stmt
+	stmtDeleteGame              *sql.Stmt
+	stmtGetOwners               *sql.Stmt
+	stmtGetUserGames            *sql.Stmt
+	stmtGetWantedGamesByConsole *sql.Stmt
+	stmtGetWantedGamesByGame    *sql.Stmt
 )
 
 func GameDB(d *sql.DB) {
 	var err error
 	db = d
-	gameselect := "games.id, games.name,games.console_name,IFNULL(publisher,''),IFNULL(year,0),IFNULL(user_id,0),IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,'')"
+	gameselect := "games.id, games.name,games.console_name,IFNULL(publisher,''),IFNULL(year,0),IFNULL(user_id,0),IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,''),IFNULL(want,false)"
 	sgg := "select " + gameselect + " from games left join user_games on games.id=user_games.game_id where games.id=? OR (games.id=? AND user_games.user_id=?)"
 	stmtGetGame, err = u.Sth(db, sgg)
 	if err != nil {
@@ -62,34 +67,22 @@ func GameDB(d *sql.DB) {
 		glog.Fatalf("u.Sth(db, %s): %s", sig, err)
 	}
 
-	suug := "replace into user_games (game_id, user_id, has, manual, box, rating, review) values (?,?,?,?,?,?,?)"
+	suug := "replace into user_games (game_id, user_id, has, manual, box, rating, review,want) values (?,?,?,?,?,?,?,?)"
 	stmtUpdateUserGame, err = u.Sth(db, suug)
 	if err != nil {
 		glog.Fatalf("u.Sth(db, %s): %s", suug, err)
 	}
 
-	sggbs := "select id, name, console_name, publisher, year from games where console_name=?"
+	sggbs := "select id from games where console_name=?"
 	stmtGetGameByConsole, err = u.Sth(db, sggbs)
 	if err != nil {
 		glog.Fatalf("u.Sth(db, %s): %s", sggbs, err)
 	}
 
-	sgugbs := "select user_games.game_id, IFNULL(user_id,0),IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,'') from user_games, games where user_games.user_id=? and user_games.game_id=games.id and games.console_name=?"
-	stmtGetUserGamesByConsole, err = u.Sth(db, sgugbs)
-	if err != nil {
-		glog.Fatalf("u.Sth(db, %s): %s", sgugbs, err)
-	}
-
-	sgbsn := "select id, name, console_name, publisher, year  from games where name like ?"
+	sgbsn := "select id  from games where name like ?"
 	stmtSearchGameNames, err = u.Sth(db, sgbsn)
 	if err != nil {
 		glog.Fatalf("u.Sth(db, %s): %s", sgbsn, err)
-	}
-
-	sgugsearch := "select user_games.game_id, IFNULL(user_id,0),IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,'') from user_games, games where user_games.user_id=? and user_games.game_id=games.id and games.name like ?"
-	stmtSearchUserGameNames, err = u.Sth(db, sgugsearch)
-	if err != nil {
-		glog.Fatalf("u.Sth(db, %s): %s", sgugsearch, err)
 	}
 
 	sdelgame := "delete from games where id=? limit 1"
@@ -98,20 +91,33 @@ func GameDB(d *sql.DB) {
 		glog.Fatalf("u.Sth(db, %s): %s", sdelgame, err)
 	}
 
-	sgetowners := "select count(*) from user_games where game_id=?"
+	sgetowners := "select count(*) from user_games where game_id=? and has=true"
 	stmtGetOwners, err = u.Sth(db, sgetowners)
 	if err != nil {
 		glog.Fatalf("u.Sth(db, %s): %s", sgetowners, err)
 	}
 
-	sgug := "select games.id, games.name, games.console_name, IFNULL(games.publisher,''), IFNULL(games.year,0),IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,'') from games, user_games where games.id = user_games.game_id and user_games.user_id=?"
+	sgug := "select game_id from user_games where user_id=?"
 	stmtGetUserGames, err = u.Sth(db, sgug)
 	if err != nil {
 		glog.Fatalf("u.Sth(db, %s): %s", sgug, err)
 	}
+
+	sql := "select distinct(g.id) from games as g, consoles as c, user_consoles as uc where (uc.wantgames=1 and uc.name=g.console_name)"
+	stmtGetWantedGamesByConsole, err = u.Sth(db, sql)
+	if err != nil {
+		glog.Fatalf("u.Sth(db, %s): %s", sql, err)
+	}
+
+	sql = "select distinct(g.game_id) from user_games as g where want=1"
+	stmtGetWantedGamesByGame, err = u.Sth(db, sql)
+	if err != nil {
+		glog.Fatalf("u.Sth(db, %s): %s", sql, err)
+	}
+
 }
 func (g Game) String() string {
-	return fmt.Sprintf("ID: %v\nName: %s\nConsoleName: %s\nManufacturer: %s\nYear: %v\nUserID: %v\nHas: %v\nHasManual: %v\nHasBox: %v\nRating: %v\nReview: %s\n", g.ID, g.Name, g.ConsoleName, g.Publisher, g.Year, g.User.ID, g.Has, g.HasManual, g.HasBox, g.Rating, g.Review)
+	return fmt.Sprintf("ID: %v\nName: %s\nConsoleName: %s\nManufacturer: %s\nYear: %v\nUserID: %v\nHas: %v\nHasManual: %v\nHasBox: %v\nRating: %v\nReview: %s\nWant: %v\n", g.ID, g.Name, g.ConsoleName, g.Publisher, g.Year, g.User.ID, g.Has, g.HasManual, g.HasBox, g.Rating, g.Review, g.Want)
 }
 func (g Game) Save() (err error) {
 	if g.ID < 1 {
@@ -127,7 +133,7 @@ func (g Game) Save() (err error) {
 		glog.Errorf("stmtUpdateGame.Exec(%v,%s,%s,%s,%v): %s", g.ID, g.Name, g.ConsoleName, g.Publisher, g.Year, err)
 		return err
 	}
-	_, err = stmtUpdateUserGame.Exec(g.ID, g.User.ID, g.Has, g.HasManual, g.HasBox, g.Rating, g.Review)
+	_, err = stmtUpdateUserGame.Exec(g.ID, g.User.ID, g.Has, g.HasManual, g.HasBox, g.Rating, g.Review, g.Want)
 	if err != nil {
 		glog.Errorf("stmtUpdateUserGame.Exec(%v,%v,%v,%v,%v,%v,%s): %s", g.ID, g.User.ID, g.Has, g.HasManual, g.HasBox, g.Rating, g.Review, err)
 		return err
@@ -216,8 +222,11 @@ func InsertGame(g Game) (Game, error) {
 		return g, err
 	}
 	g.ID = int(lid)
-	if err := g.Save(); err != nil {
-		glog.Errorf("g.Save(): %s", err)
+	if g.User.ID > 0 {
+		if err := g.Save(); err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+		return g, err
 	}
 	return g, err
 }
@@ -227,7 +236,7 @@ func GetGame(id int, user auth.User) (Game, error) {
 	if user.ID < 1 {
 		return g, errors.New("game.GetGame: Invalid UserID")
 	}
-	err = stmtGetGame.QueryRow(id, id, user.ID).Scan(&g.ID, &g.Name, &g.ConsoleName, &g.Publisher, &g.Year, &g.User.ID, &g.Has, &g.HasManual, &g.HasBox, &g.Rating, &g.Review)
+	err = stmtGetGame.QueryRow(id, id, user.ID).Scan(&g.ID, &g.Name, &g.ConsoleName, &g.Publisher, &g.Year, &g.User.ID, &g.Has, &g.HasManual, &g.HasBox, &g.Rating, &g.Review, &g.Want)
 	g.User = user
 	if err != nil {
 		e := fmt.Sprintf("GetGame(%v,%s): %s", id, user, err)
@@ -235,82 +244,108 @@ func GetGame(id int, user auth.User) (Game, error) {
 	}
 	return g, err
 }
-func GetGamesByConsole(con Console) ([]Game, error) {
-	var gl []Game
-	var err error
-	var gm = make(map[int]Game)
-	var um = make(map[int]Game)
-	rows, err := stmtGetGameByConsole.Query(con.Name)
+func GetGamesByConsole(c Console) (gl []Game, err error) {
+	var idl []int
+	rows, err := stmtGetGameByConsole.Query(c.Name)
 	if err != nil {
-		glog.Errorf("stmtGetGameByConsole(%s): %s", con.Name, err)
+		glog.Errorf("stmtGetGameByConsole(%s): %s", c.Name, err)
 		return gl, err
 	}
 	for rows.Next() {
-		var g Game
-		rows.Scan(&g.ID, &g.Name, &g.ConsoleName, &g.Publisher, &g.Year)
-		g.User = con.User
-		gm[g.ID] = g
+		var id int
+		rows.Scan(&id)
+		idl = append(idl, id)
 	}
-	rows, err = stmtGetUserGamesByConsole.Query(con.User.ID, con.Name)
+	gl, err = GetGamesByIDS(idl, c.User)
 	if err != nil {
-		glog.Errorf("stmtGetUserGamesByconsole(%v,%s): %s", con.User.ID, con.Name, err)
-		return gl, err
-	}
-	for rows.Next() {
-		var g Game
-		var dummy int
-		rows.Scan(&g.ID, &dummy, &g.Has, &g.HasManual, &g.HasBox, &g.Rating, &g.Review)
-		g.User = con.User
-		um[g.ID] = g
-	}
-	for _, g := range gm {
-		g.Has = um[g.ID].Has
-		g.HasBox = um[g.ID].HasBox
-		g.HasManual = um[g.ID].HasManual
-		g.Rating = um[g.ID].Rating
-		g.Review = um[g.ID].Review
-		g.User = con.User
-		gl = append(gl, g)
+		glog.Errorf("GetGamesByIDS(id_list, user): %s", err)
 	}
 	return gl, err
 }
-func SearchGames(ss string, user auth.User) ([]Game, error) {
-	var gl []Game
-	var err error
+func SearchGames(ss string, user auth.User) (gl []Game, err error) {
+	var idl []int
 	n := "%" + ss + "%"
-	var gm = make(map[int]Game)
-	var um = make(map[int]Game)
 	rows, err := stmtSearchGameNames.Query(n)
 	if err != nil {
 		glog.Errorf("stmtGetGameByConsole(%s): %s", n, err)
 		return gl, err
 	}
 	for rows.Next() {
-		var g Game
-		rows.Scan(&g.ID, &g.Name, &g.ConsoleName, &g.Publisher, &g.Year)
-		g.User = user
-		gm[g.ID] = g
+		var id int
+		rows.Scan(&id)
+		idl = append(idl, id)
 	}
-	rows, err = stmtSearchUserGameNames.Query(user.ID, n)
+	gl, err = GetGamesByIDS(idl, user)
 	if err != nil {
-		glog.Errorf("stmtGetUserGamesByconsole(%v,%s): %s", user.ID, n, err)
+		glog.Errorf("GetGamesByIDS(idl, user): %s", err)
+	}
+	return gl, err
+}
+func GetGamesByIDS(id_list []int, user auth.User) (gl []Game, err error) {
+	if len(id_list) == 1 {
+		g, err := GetGame(id_list[0], user)
+		gl = append(gl, g)
 		return gl, err
+	}
+	if len(id_list) == 0 {
+		return gl, err
+	}
+	var id_list_string []string
+	for _, id := range id_list {
+		id_list_string = append(id_list_string, strconv.Itoa(id))
+	}
+	ids := strings.Join(id_list_string, ",")
+	sql := fmt.Sprintf("select games.id, games.name,games.console_name,IFNULL(publisher,''),IFNULL(year,0),IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,''),IFNULL(want,false) from  games left join user_games on games.id=user_games.game_id where games.id in (%s) OR (games.id in (%s) AND user_games.user_id=%v) ;", ids, ids, user.ID)
+	if user.ID < 1 {
+		sql = fmt.Sprintf("select games.id, games.name,games.console_name,IFNULL(publisher,''),IFNULL(year,0),false,false,false,0,'',false from games where id in (%s)", ids)
+	}
+	sth, err := u.Sth(db, sql)
+	if err != nil {
+		glog.Errorf("u.Sth(db, %s): %s", sql, err)
+	}
+	rows, err := sth.Query()
+	if err != nil {
+		glog.Errorf("sth.Query(): %s", err)
 	}
 	for rows.Next() {
 		var g Game
-		var dummy int
-		rows.Scan(&g.ID, &dummy, &g.Has, &g.HasManual, &g.HasBox, &g.Rating, &g.Review)
-		g.User = user
-		um[g.ID] = g
-	}
-	for _, g := range gm {
-		g.Has = um[g.ID].Has
-		g.HasBox = um[g.ID].HasBox
-		g.HasManual = um[g.ID].HasManual
-		g.Rating = um[g.ID].Rating
-		g.Review = um[g.ID].Review
+		rows.Scan(&g.ID, &g.Name, &g.ConsoleName, &g.Publisher, &g.Year, &g.Has, &g.HasManual, &g.HasBox, &g.Rating, &g.Review, &g.Want)
 		g.User = user
 		gl = append(gl, g)
+	}
+	return gl, err
+}
+
+func GetAllWantedGames() (gl []Game, err error) {
+	var idl []int
+	id_map := make(map[int]int)
+	rows, err := stmtGetWantedGamesByConsole.Query()
+	if err != nil {
+		glog.Errorf("stmtGetWantedGamesByConsole(): %s", err)
+		return gl, err
+	}
+	for rows.Next() {
+		var id int
+		rows.Scan(&id)
+		id_map[id] = 1
+	}
+	rows, err = stmtGetWantedGamesByGame.Query()
+	if err != nil {
+		glog.Errorf("stmtGetWantedGamesByGame(): %s", err)
+		return gl, err
+	}
+	for rows.Next() {
+		var id int
+		rows.Scan(&id)
+		id_map[id] = 1
+	}
+	for id, _ := range id_map {
+		idl = append(idl, id)
+	}
+	var user auth.User
+	gl, err = GetGamesByIDS(idl, user)
+	if err != nil {
+		glog.Errorf("GetGamesByIDS(idl,user): %s", err)
 	}
 	return gl, err
 }

@@ -7,6 +7,10 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang/glog"
 	"github.com/msbranco/goconfig"
+	"github.com/stvp/assert"
+	"html/template"
+	"net/http"
+	"net/url"
 	"os/exec"
 	"testing"
 )
@@ -18,33 +22,19 @@ func TestGetGame(t *testing.T) {
 	print("GetGame\n")
 	seedGame()
 	user, err := auth.GetUser(1)
-	if err != nil {
-		t.Errorf("auth.GetUser(1): %s", err)
-	}
+	assert.Nil(t, err, "auth.GetUser(1)")
 	g, err := GetGame(1, user)
-	if err != nil {
-		t.Errorf("GetGame(1,1): %s", err)
-	}
-	if g.User.ID != 1 {
-		t.Errorf("g.UserID 1 <=> %v", g.User.ID)
-	}
-	if g.Has != true {
-		t.Errorf("g.Has true <=>%v", g.Has)
-		dump()
-	}
-	if g.HasBox != true {
-		t.Errorf("g.HasBox <true <=> %v", g.HasBox)
-	}
-	if g.HasManual != true {
-		t.Errorf("g.HasManual true <=> %v", g.HasManual)
-	}
-	if g.Rating != 3 {
-		t.Errorf("g.Rating 3 <=> %v", g.Rating)
-	}
-	if g.Review != "is good" {
-		t.Errorf("g.Review 'is good' <=> %s", g.Review)
-	}
-
+	assert.Nil(t, err, "GetGame(1,user)")
+	assert.Equal(t, 1, g.User.ID, "g.User.ID")
+	assert.Equal(t, "game1", g.Name, "g.Name")
+	assert.Equal(t, "Nintendo", g.Publisher, "g.Publisher")
+	assert.Equal(t, 1990, g.Year, "g.Year")
+	assert.Equal(t, true, g.Has, "g.Has")
+	assert.Equal(t, true, g.HasBox, "g.HasBox")
+	assert.Equal(t, true, g.HasManual, "g.HasManual")
+	assert.Equal(t, 3, g.Rating, "g.Rating")
+	assert.Equal(t, "is good", g.Review, "g.Review")
+	assert.Equal(t, false, g.Want, "Want")
 }
 func TestGame_Save(t *testing.T) {
 	print("Game.Save\n")
@@ -62,6 +52,7 @@ func TestGame_Save(t *testing.T) {
 	g.Review = "is bad"
 	g.Publisher = "newman1"
 	g.Year = 2000
+	g.Want = true
 	err = g.Save()
 	if err != nil {
 		t.Errorf("g.Save(): %s", err)
@@ -97,6 +88,7 @@ func TestGame_Save(t *testing.T) {
 	if d.Year != 2000 {
 		t.Errorf("d.Year 2000 <=> %v", d.Year)
 	}
+	assert.Equal(t, true, d.Want, "Want")
 }
 func TestGame_Delete(t *testing.T) {
 	print("Game.Delete\n")
@@ -129,9 +121,7 @@ func TestGame_Delete(t *testing.T) {
 }
 func TestGame_Owners(t *testing.T) {
 	print("Game.Owners\n")
-	user := gu(t)
 	g := gg(t)
-	fmt.Printf("g.has: %v, %s", g.Has, user)
 	if g.Owners() != 1 {
 		t.Errorf("g.Owners(): 1 <=> %v", g.Owners())
 	}
@@ -140,8 +130,138 @@ func TestGame_Owners(t *testing.T) {
 	if err != nil {
 		t.Errorf("g.Save(): %s", err)
 	}
+	if g.Owners() != 0 {
+		t.Errorf("g.Owners(): 0 <=> %v", g.Owners())
+	}
+}
+func TestGame_ConsoleSelect(t *testing.T) {
+	print("Game.ConsoleSelect\n")
+	seedGame()
+	user := gu(t)
+	g, err := GetGame(1, user)
+	if err != nil {
+		t.Errorf("GetGame(1,user): %s", err)
+	}
+	css := template.HTML(` <option value="3DS" >3DS</option> <option value="Atari 2600" >Atari 2600</option> <option value="Atari 5200" >Atari 5200</option> <option value="Atari 7800" >Atari 7800</option> <option value="Atari Jaguar" >Atari Jaguar</option> <option value="Atari Lynx" >Atari Lynx</option> <option value="Game Boy" >Game Boy</option> <option value="Game Boy Advance" >Game Boy Advance</option> <option value="Game Boy Color" >Game Boy Color</option> <option value="Game Cube" >Game Cube</option> <option value="Game Gear" >Game Gear</option> <option value="Genesis" >Genesis</option> <option value="Handheld" >Handheld</option> <option value="NES" selected>NES</option> <option value="Nintendo 64" >Nintendo 64</option> <option value="Nintendo DS" >Nintendo DS</option> <option value="PSP" >PSP</option> <option value="Playstation" >Playstation</option> <option value="Playstation 2" >Playstation 2</option> <option value="Playstation 3" >Playstation 3</option> <option value="Playstation 4" >Playstation 4</option> <option value="Playstation Vita" >Playstation Vita</option> <option value="Sega CD" >Sega CD</option> <option value="Sega Dreamcast" >Sega Dreamcast</option> <option value="Sega Saturn" >Sega Saturn</option> <option value="Super Nintendo" >Super Nintendo</option> <option value="Virtual Boy" >Virtual Boy</option> <option value="Wii" >Wii</option> <option value="XBox" >XBox</option> <option value="XBox 360" >XBox 360</option> <option value="XBox One" >XBox One</option>`)
+	if g.ConsoleSelect() != css {
+		t.Errorf("g.ConsoleSelect()\n'%s'\n<=>'%s'\n", css, g.ConsoleSelect())
+	}
+}
+func TestGame_StarContent(t *testing.T) {
+	print("Game.StarContent\n")
+	seedGame()
+	user := gu(t)
+	g, err := GetGame(1, user)
+	if err != nil {
+		t.Errorf("GetGame(1,user): %s", err)
+	}
+	sc := template.HTML(` <img id='star_1_1' src='/static/star_on.png' onclick='set_game_rating(1,1)'> <img id='star_1_2' src='/static/star_on.png' onclick='set_game_rating(1,2)'> <img id='star_1_3' src='/static/star_on.png' onclick='set_game_rating(1,3)'> <img id='star_1_4' src='/static/star_off.png' onclick='set_game_rating(1,4)'> <img id='star_1_5' src='/static/star_off.png' onclick='set_game_rating(1,5)'>`)
+	if g.StarContent() != sc {
+		t.Errorf("g.Starcontent()\n'%s'<=>'%s'\n", sc, g.StarContent())
+	}
+}
+func TestGetGamesByConsole(t *testing.T) {
+	print("GetGamesByConsole\n")
+	c := gsc(t)
+	gl, err := GetGamesByConsole(c)
+	assert.Nil(t, err, "GetGamesByConsole()")
+	assert.Equal(t, 801, len(gl), "GetGamesByConsole")
+}
+
+func TestFilter_Box(t *testing.T) {
+	print("Filter_Box\n")
+	c := gsc(t)
+	gl, err := c.Games()
+	assert.Nil(t, err, "c.Games()")
+	assert.Equal(t, 1, len(Filter(gl).Box(true)), "FilterBox(true)")
+	assert.Equal(t, 800, len(Filter(gl).Box(false)), "FilterBox(false)")
+}
+func TestFilter_Has(t *testing.T) {
+	print("Filter_Has\n")
+	c := gsc(t)
+	gl, err := c.Games()
+	assert.Nil(t, err, "c.Games()")
+	assert.Equal(t, 1, len(Filter(gl).Has(true)), "FilterHas(true)")
+	assert.Equal(t, 800, len(Filter(gl).Has(false)), "FilterHas(false)")
+}
+func TestFilter_Manual(t *testing.T) {
+	print("Filter_Manual\n")
+	c := gsc(t)
+	gl, err := c.Games()
+	assert.Nil(t, err, "c.Games()")
+	assert.Equal(t, 1, len(Filter(gl).Manual(true)), "FilterManual(true)")
+	assert.Equal(t, 800, len(Filter(gl).Manual(false)), "FilterManual(false)")
+}
+
+func TestFilter_Request(t *testing.T) {
+	print("Filter_Request\n")
+	c := gsc(t)
+	gl, err := c.Games()
+	assert.Nil(t, err, "c.Games()")
+	r := http.Request{}
+	uv := url.Values{}
+	uv.Add("dummy", "dummy")
+	r.Form = uv
+	assert.Equal(t, len(Filter(gl).Request(&r)), 801, "FilterRequest()")
+	uv.Add("has", "true")
+	assert.Equal(t, len(Filter(gl).Request(&r)), 1, "FilterRequest(has=true)")
+	uv.Del("has")
+	uv.Add("manual", "true")
+	assert.Equal(t, len(Filter(gl).Request(&r)), 1, "FilterRequest(manual=true)")
+	uv.Del("manual")
+	uv.Add("box", "true")
+	assert.Equal(t, len(Filter(gl).Request(&r)), 1, "FilterRequest(box=true)")
+}
+func TestGetGamesByIDS(t *testing.T) {
+	print("GetGamesByIDs\n")
+	seedGame()
+	idl := []int{1, 2, 3, 4, 5}
+	user := gu(t)
+	gl, err := GetGamesByIDS(idl, user)
+	assert.Nil(t, err, "GetGamesByIDS(idl,user)")
+	assert.Equal(t, 2, len(gl), "len(gamelist)")
+	g := gl[0]
+	assert.Equal(t, 1, g.User.ID, "g.User.ID")
+	assert.Equal(t, "game1", g.Name, "g.Name")
+	assert.Equal(t, "Nintendo", g.Publisher, "g.Publisher")
+	assert.Equal(t, 1990, g.Year, "g.Year")
+	assert.Equal(t, true, g.Has, "g.Has")
+	assert.Equal(t, true, g.HasBox, "g.HasBox")
+	assert.Equal(t, true, g.HasManual, "g.HasManual")
+	assert.Equal(t, 3, g.Rating, "g.Rating")
+	assert.Equal(t, "is good", g.Review, "g.Review")
+	assert.Equal(t, false, g.Want, "Want")
+}
+
+func TestGetAllWantedGames(t *testing.T) {
+	print("GetAllWantedGames\n")
+	seedGame()
+	user := gu(t)
+	c, err := GetConsole("Atari 2600", user)
+	assert.Nil(t, err, "GetConsole(Atari 2600,user)")
+	print("\tInitial\n")
+	wg, err := GetAllWantedGames()
+	assert.Nil(t, err, "GetAllWantedGames()")
+	assert.Equal(t, 0, len(wg), "GetAllWantedGames")
+	print("\tMarking Console WantGames\n")
+	c.WantGames = true
+	err = c.Save()
+	assert.Nil(t, err, "c.Save()")
+	wg, err = GetAllWantedGames()
+	assert.Nil(t, err, "GetAllWantedGames()")
+	assert.Equal(t, 520, len(wg), "GetAllWantedGames()")
+	print("\tMarking individual games\n")
+	g, err := GetGame(1, user)
+	assert.Nil(t, err, "GetGame(1,user)")
+	g.Want = true
+	err = g.Save()
+	assert.Nil(t, err, "g.Save()")
+	wg, err = GetAllWantedGames()
+	assert.Nil(t, err, "GetAllWantedGames()")
+	assert.Equal(t, 521, len(wg), "GetAllWantedGames()")
 
 }
+
 func TestSearchGames(t *testing.T) {
 	print("SearchGames\n")
 	seedGame()
@@ -195,7 +315,14 @@ func TestSearchGames(t *testing.T) {
 	if g.Publisher != "mypublisher" {
 		t.Errorf("g.Publisher 'mypublisher' <=> %v", g.Publisher)
 	}
-
+	sl, err := SearchGames("mario", user)
+	if err != nil {
+		t.Errorf("SearchGames(mario,user): %s", err)
+	}
+	egl := 9
+	if len(sl) != egl {
+		t.Errorf("len(SearchGames(mario)) %v <=> %v", egl, len(sl))
+	}
 }
 func TestInsertGame(t *testing.T) {
 	print("InsertGame\n")
@@ -264,8 +391,7 @@ func initGame() {
 	if err != nil {
 		panic(err)
 	}
-
-	out, err := exec.Command("sh", "seed.sh").Output()
+	out, err := exec.Command("sh", "create_tables.sh").Output()
 	if err != nil {
 		glog.Errorf("sh create_tables.sh %s\n%s", err, out)
 		return

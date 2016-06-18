@@ -8,7 +8,7 @@ mysql -u gameslist_test -pKoZMEEh49nMts2T4XgEWVWC1 gameslist_test < ../sql/seed_
 mysql -u gameslist_test -pKoZMEEh49nMts2T4XgEWVWC1 gameslist_test < ../sql/seed_2600_games.sql
 mysql -u gameslist_test -pKoZMEEh49nMts2T4XgEWVWC1 gameslist_test < ../sql/seed_nes_games.sql
 
-echo "replace into games (id, name, console_name) values (1,'game1','NES'),(2,'game2','NES')" | mysql -u gameslist_test -pKoZMEEh49nMts2T4XgEWVWC1 gameslist_test
+echo "replace into games (id, name, console_name, publisher, year) values (1,'game1','NES','Nintendo',1990),(2,'game2','NES','Nintendo',1989)" | mysql -u gameslist_test -pKoZMEEh49nMts2T4XgEWVWC1 gameslist_test
 echo "replace into users (id, email, admin) values (1,'demouser',false),(2,'adminuser',true)" | mysql -u gameslist_test -pKoZMEEh49nMts2T4XgEWVWC1 gameslist_test
 echo "replace into user_consoles (name,user_id,has, manual, box, rating,review) values ('NES',1,true,true,true,3,'is good')"| mysql -u gameslist_test -pKoZMEEh49nMts2T4XgEWVWC1 gameslist_test
 echo "replace into user_games (id,game_id,user_id,has, manual, box, rating,review) values (1,1,1,true,true,true,3,'is good')"| mysql -u gameslist_test -pKoZMEEh49nMts2T4XgEWVWC1 gameslist_test

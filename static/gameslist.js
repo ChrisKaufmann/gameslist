@@ -199,3 +199,24 @@ function save_console_review(id,name)
 		document.getElementById("review_text_"+id).value=html;
 	}})
 }
+function save_want_game(id,elem) {
+    var data="action=wantnot&id="+id;
+    if (document.getElementById(elem).checked) {
+        data="action=want&id="+id;
+    }
+    $.ajax({type: "GET", url: '/set/game/?'+data, success:function(html){} });
+}
+function save_want_console(id,elem) {
+    var data="action=wantnot&name="+id;
+    if (document.getElementById(elem).checked) {
+        data="action=want&name="+id;
+    }
+    $.ajax({type: "GET", url: '/set/console/?'+data, success:function(html){} });
+}
+function save_wantgames_console(id,elem) {
+    var data="action=wantnotgames&name="+id;
+    if (document.getElementById(elem).checked) {
+        data="action=wantgames&name="+id;
+    }
+    $.ajax({type: "GET", url: '/set/console/?'+data, success:function(html){} });
+}

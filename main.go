@@ -229,75 +229,6 @@ func handleConsole(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("user: %s %v", user.Email, user)
 	fmt.Printf("handleConsole %v\n", time.Now().Sub(t0))
 }
-func handleSetGame(w http.ResponseWriter, r *http.Request) {
-	t0 := time.Now()
-	loggedin, user := auth.LoggedIn(w, r)
-	if !loggedin {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
-	var id int
-	id = u.Toint(r.FormValue("id"))
-	g, err := game.GetGame(id, user)
-	if err != nil {
-		glog.Errorf("GetGame(%v,%v): %s", id, user, err)
-	}
-	switch r.FormValue("action") {
-	case "setrating":
-		g.Rating = u.Toint(r.FormValue("rating"))
-		err := g.Save()
-		if err != nil {
-			glog.Errorf("g.Save(): %s", err)
-		}
-		fmt.Fprintf(w, "%s", g.StarContent())
-	case "have":
-		g.Has = true
-		err := g.Save()
-		if err != nil {
-			glog.Errorf("g.Save(): %s", err)
-		}
-	case "have_not":
-		g.Has = false
-		err := g.Save()
-		if err != nil {
-			glog.Errorf("g.Save(): %s", err)
-		}
-	case "has_manual":
-		g.HasManual = true
-		err := g.Save()
-		if err != nil {
-			glog.Errorf("g.Save(): %s", err)
-		}
-	case "hasnot_manual":
-		g.HasManual = false
-		err := g.Save()
-		if err != nil {
-			glog.Errorf("g.Save(): %s", err)
-		}
-	case "has_box":
-		g.HasBox = true
-		err := g.Save()
-		if err != nil {
-			glog.Errorf("g.Save(): %s", err)
-		}
-	case "hasnot_box":
-		g.HasBox = false
-		err := g.Save()
-		if err != nil {
-			glog.Errorf("g.Save(): %s", err)
-		}
-	case "set_review":
-		g.Review = r.FormValue("review")
-		err := g.Save()
-		if err != nil {
-			glog.Errorf("g.Save(): %s", err)
-		}
-		fmt.Fprintf(w, "%s", g.Review)
-	default:
-		glog.Errorf("Invalid action passed to set game: %s", r.FormValue("action"))
-	}
-	fmt.Printf("handleSetGame %v\n", time.Now().Sub(t0))
-}
 func handleAdd(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	loggedin, user := auth.LoggedIn(w, r)
@@ -478,6 +409,14 @@ func handleSetConsole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name := r.FormValue("name")
+	if len(name) < 1 {
+		glog.Errorf("Invalid Name passed to set/console: %s", name)
+		return
+	}
+	if r.FormValue("action") == "" {
+		glog.Errorf("No action passed to set/console/")
+		return
+	}
 	c, err := game.GetConsole(name, user)
 	if err != nil {
 		glog.Errorf("GetConsole(%v,%v): %s", name, user, err)
@@ -528,6 +467,30 @@ func handleSetConsole(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			glog.Errorf("g.Save(): %s", err)
 		}
+	case "want":
+		c.Want = true
+		err := c.Save()
+		if err != nil {
+			glog.Error("g.Save(): %s", err)
+		}
+	case "wantnot":
+		c.Want = false
+		err := c.Save()
+		if err != nil {
+			glog.Error("g.Save(): %s", err)
+		}
+	case "wantgames":
+		c.WantGames = true
+		err := c.Save()
+		if err != nil {
+			glog.Error("g.Save(): %s", err)
+		}
+	case "wantnotgames":
+		c.WantGames = false
+		err := c.Save()
+		if err != nil {
+			glog.Error("g.Save(): %s", err)
+		}
 	case "set_review":
 		c.Review = r.FormValue("review")
 		err := c.Save()
@@ -545,6 +508,96 @@ func handleSetConsole(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Printf("handleSetConsole %v\n", time.Now().Sub(t0))
 }
+func handleSetGame(w http.ResponseWriter, r *http.Request) {
+	t0 := time.Now()
+	loggedin, user := auth.LoggedIn(w, r)
+	if !loggedin {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	var id int
+	if r.FormValue("id") == "" {
+		glog.Errorf("No ID passed to SetGame")
+		return
+	}
+	if r.FormValue("action") == "" {
+		glog.Errorf("No action passed to SetGame")
+		return
+	}
+	id = u.Toint(r.FormValue("id"))
+	g, err := game.GetGame(id, user)
+	if err != nil {
+		glog.Errorf("GetGame(%v,%v): %s", id, user, err)
+	}
+	switch r.FormValue("action") {
+	case "setrating":
+		g.Rating = u.Toint(r.FormValue("rating"))
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+		fmt.Fprintf(w, "%s", g.StarContent())
+	case "have":
+		g.Has = true
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "have_not":
+		g.Has = false
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "want":
+		g.Want = true
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "wantnot":
+		g.Want = false
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "has_manual":
+		g.HasManual = true
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "hasnot_manual":
+		g.HasManual = false
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "has_box":
+		g.HasBox = true
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "hasnot_box":
+		g.HasBox = false
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+	case "set_review":
+		g.Review = r.FormValue("review")
+		err := g.Save()
+		if err != nil {
+			glog.Errorf("g.Save(): %s", err)
+		}
+		fmt.Fprintf(w, "%s", g.Review)
+	default:
+		glog.Errorf("Invalid action passed to set game: %s", r.FormValue("action"))
+	}
+	fmt.Printf("handleSetGame %v\n", time.Now().Sub(t0))
+}
+
 func handleSearch(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	print("handleCollection\n")

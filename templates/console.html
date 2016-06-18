@@ -1,6 +1,6 @@
 {{ define "console_entry" }}
 <div id="console-{{.ShortName}}" style="float:left;padding:20px">
-    <a href="/console/{{.Name}}"><div id="console-{{.ShortName}}-picture"><img src="{{.Picture}}" height="10%"></a></div>
+    <div id="console-{{.ShortName}}-picture"><a href="/console/{{.Name}}"><img src="{{.Picture}}" height="10%"></a></div>
     <div id="console-{{.ShortName}}-name">
         <input type="checkbox" id="checkbox-{{.ShortName}}" {{ if .Has }}Checked{{end}} onchange="save_console_has({{.Name}},'checkbox-{{.ShortName}}')">
             {{.Name}} {{.OwnedGames}}{{if .TotalGames}}/{{.TotalGames}}{{end}}
@@ -22,6 +22,10 @@
     <div id='star_container_{{.ShortName}}'>
         {{.StarContent}}
     </div>
+    {{if .Has}}{{else}}
+    <input type="checkbox" id="want-console-{{.ShortName}}"  {{if .Want}}checked{{end}} onchange="save_want_console({{.ShortName}},'want-console-{{.ShortName}}')">Want
+    {{end}}
+    <input type="checkbox" id="wantgames-console-{{.ShortName}}" {{if .WantGames}}checked{{end}} onchange="save_wantgames_console({{.ShortName}},'wantgames-console-{{.ShortName}}')">WantGames
 </div>
 {{ end }}
 

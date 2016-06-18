@@ -7,6 +7,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang/glog"
 	"github.com/msbranco/goconfig"
+	"github.com/stvp/assert"
+	"html/template"
 	"os/exec"
 	"testing"
 )
@@ -22,25 +24,15 @@ func TestGetConsole(t *testing.T) {
 	if err != nil {
 		t.Errorf("GetConsole(NES,1): %s", err)
 	}
-	if c.User.ID != 1 {
-		t.Errorf("c.UserID 1 <=> %v", c.User.ID)
-	}
-	if c.Has != true {
-		t.Errorf("c.Has true <=>%v", c.Has)
-	}
-	if c.HasBox != true {
-		t.Errorf("c.HasBox <true <=> %v", c.HasBox)
-	}
-	if c.HasManual != true {
-		t.Errorf("c.HasManual true <=> %v", c.HasManual)
-	}
-	if c.Rating != 3 {
-		t.Errorf("c.Rating 3 <=> %v", c.Rating)
-	}
-	if c.Review != "is good" {
-		t.Errorf("c.Review 'is good' <=> %s", c.Review)
-	}
-
+	assert.Equal(t, 1, c.User.ID, "c.UserID")
+	assert.True(t, c.Has, "c.Has")
+	assert.True(t, c.HasBox, "c.HasBox")
+	assert.True(t, c.HasManual, "c.HasManual")
+	assert.Equal(t, 3, c.Rating, "c.Rating")
+	assert.Equal(t, "is good", c.Review, "c.Review")
+	assert.Equal(t, "Nintendo", c.Manufacturer, "c.Manufacturer")
+	assert.False(t, c.Want, "c.Want")
+	assert.False(t, c.WantGames, "c.WantGames")
 }
 func TestConsole_Save(t *testing.T) {
 	print("Console.Save\n")
@@ -53,6 +45,8 @@ func TestConsole_Save(t *testing.T) {
 	c.Review = "is bad"
 	c.Manufacturer = "newman1"
 	c.Year = 2000
+	c.Want = true
+	c.WantGames = true
 	err := c.Save()
 	if err != nil {
 		t.Errorf("c.Save(): %s", err)
@@ -65,27 +59,15 @@ func TestConsole_Save(t *testing.T) {
 	if err != nil {
 		t.Errorf("GetConsole(NES,user): %s", err)
 	}
-	if d.Has != false {
-		t.Errorf("d.Has false <=> %v", d.Has)
-	}
-	if d.HasBox != false {
-		t.Errorf("d.HasBox false <=> %v", d.HasBox)
-	}
-	if d.HasManual != false {
-		t.Errorf("d.HasManual false <=> %v", d.HasManual)
-	}
-	if d.Rating != 5 {
-		t.Errorf("d.Rating 5<=>%v", d.Rating)
-	}
-	if d.Review != "is bad" {
-		t.Errorf("d.Review 'is bad' <=> %s", d.Review)
-	}
-	if d.Manufacturer != "newman1" {
-		t.Errorf("d.Manufacturer newman1<=>%s", d.Manufacturer)
-	}
-	if d.Year != 2000 {
-		t.Errorf("d.Year 2000 <=> %v", d.Year)
-	}
+	assert.False(t, d.Has, "console.Has")
+	assert.False(t, d.HasBox, "console.HasBox")
+	assert.False(t, d.HasManual, "console.HasManual")
+	assert.Equal(t, 5, d.Rating, "console.Rating")
+	assert.Equal(t, "is bad", d.Review, "console.Review")
+	assert.Equal(t, "newman1", d.Manufacturer, "console.Manufacturer")
+	assert.Equal(t, 2000, d.Year, "console.Year")
+	assert.Equal(t, true, d.Want, "console.Want")
+	assert.Equal(t, true, d.WantGames, "console.Wantgames")
 }
 func TestConsole_Delete(t *testing.T) {
 	print("Console.Delete\n")
@@ -173,7 +155,70 @@ func TestConsole_OwnedGames(t *testing.T) {
 		t.Errorf("len(c.OwnedGames) 2 <=> %v", ngc)
 	}
 }
-
+func TestConsole_StarContent(t *testing.T) {
+	print("Console.StarContent\n")
+	c := gsc(t)
+	c.Rating = 3
+	c.Save()
+	u := gu(t)
+	c, err := GetConsole("NES", u)
+	if err != nil {
+		t.Errorf("GetConsole(NES,user: %s", err)
+	}
+	threestring := template.HTML(" <img id='star_NES_1' src='/static/star_on.png' onclick='set_console_rating(\"NES\",\"NES\",1)'>\n <img id='star_NES_2' src='/static/star_on.png' onclick='set_console_rating(\"NES\",\"NES\",2)'>\n <img id='star_NES_3' src='/static/star_on.png' onclick='set_console_rating(\"NES\",\"NES\",3)'>\n <img id='star_NES_4' src='/static/star_off.png' onclick='set_console_rating(\"NES\",\"NES\",4)'>\n <img id='star_NES_5' src='/static/star_off.png' onclick='set_console_rating(\"NES\",\"NES\",5)'>\n")
+	assert.Equal(t, threestring, c.StarContent(), "StarContent")
+}
+func TestConsole_ShortName(t *testing.T) {
+	print("Console.ShortName\n")
+	seedConsole()
+	u := gu(t)
+	c, err := GetConsole("Game Gear", u)
+	if err != nil {
+		t.Errorf("GetConsole(Game Gear, user): %s", err)
+	}
+	assert.Equal(t, "GameGear", c.ShortName(), "console.ShortName")
+}
+func TestConsole_TotalGames(t *testing.T) {
+	print("console.TotalGames\n")
+	c := gsc(t)
+	assert.Equal(t, 801, c.TotalGames(), "TotalGames")
+}
+func TestConsole_WantedGames(t *testing.T) {
+	print("console.WantedGames\n")
+	c := gsc(t)
+	gl, err := c.Games()
+	if err != nil {
+		t.Errorf("c.Games(): %s", err)
+	}
+	print("\tInitial\n")
+	wg, err := c.WantedGames()
+	if err != nil {
+		t.Errorf("c.WantedGames(): %s", err)
+	}
+	assert.Equal(t, 0, len(wg), "Initial Wanted Games(0)")
+	print("\tMarking 10 as wanted\n")
+	for i := 0; i <= 10; i++ {
+		gl[i].Want = true
+		if err := gl[i].Save(); err != nil {
+			t.Errorf("gl[%v].Save(): %s", i, err)
+		}
+	}
+	wg, err = c.WantedGames()
+	if err != nil {
+		t.Errorf("c.WantedGames(): %s", err)
+	}
+	assert.Equal(t, 10, len(wg), "WantedGames")
+	print("\tMarking console as wantgames\n")
+	c.WantGames = true
+	if err := c.Save(); err != nil {
+		t.Errorf("c.Save(): %s", err)
+	}
+	wg, err = c.WantedGames()
+	if err != nil {
+		t.Errorf("c.WantedGames(): %s", err)
+	}
+	assert.Equal(t, 800, len(wg), "WantedGames(console.WantGames=true)")
+}
 func initConsole() {
 	c, err := goconfig.ReadConfigFile("test_config")
 	db_name, err := c.GetString("DB", "db")

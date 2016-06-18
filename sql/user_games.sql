@@ -7,5 +7,6 @@ CREATE TABLE `user_games` (
 `box` tinyint(1) DEFAULT NULL,
 `rating` tinyint(1) DEFAULT NULL,
 `review` varchar(2048) DEFAULT NULL,
+`want` bool default false,
 PRIMARY KEY (`game_id`,`user_id`)
 )

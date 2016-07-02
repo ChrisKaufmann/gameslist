@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/ChrisKaufmann/ebay-go"
 	"github.com/ChrisKaufmann/goauth"
 	u "github.com/ChrisKaufmann/goutils"
 	"github.com/golang/glog"
@@ -20,6 +21,10 @@ type Game struct {
 	ConsoleName string
 	Publisher   string
 	Year        int
+	EbayPrice   float64
+	EbayUpdated string
+	EbayEnds    string
+	EbayURL     string
 	User        auth.User
 	Has         bool
 	HasManual   bool
@@ -48,14 +53,14 @@ var (
 func GameDB(d *sql.DB) {
 	var err error
 	db = d
-	gameselect := "games.id, games.name,games.console_name,IFNULL(publisher,''),IFNULL(year,0),IFNULL(user_id,0),IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,''),IFNULL(want,false)"
+	gameselect := "games.id, games.name,games.console_name,IFNULL(publisher,''),IFNULL(year,0),IFNULL(ebay_price,0.0),IFNULL(ebay_updated,''),IFNULL(ebay_ends,''),IFNULL(ebay_url,''),IFNULL(user_id,0),IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,''),IFNULL(want,false)"
 	sgg := "select " + gameselect + " from games left join user_games on games.id=user_games.game_id where games.id=? OR (games.id=? AND user_games.user_id=?)"
 	stmtGetGame, err = u.Sth(db, sgg)
 	if err != nil {
 		glog.Fatalf("%s: %s", sgg, err)
 	}
 
-	sug := "update games set name=?, console_name=?, publisher=?, year=? where id=? limit 1"
+	sug := "update games set name=?, console_name=?, publisher=?, year=?, ebay_price=?, ebay_ends=?, ebay_updated=NOW(), ebay_url=? where id=? limit 1"
 	stmtUpdateGame, err = u.Sth(db, sug)
 	if err != nil {
 		glog.Fatalf("u.Sth(db, %s): %s", sug, err)
@@ -124,19 +129,17 @@ func (g Game) Save() (err error) {
 		glog.Errorf("Invalid ID passed to game.Save(): %v", g.ID)
 		return errors.New("game.Save: invalid ID")
 	}
-	if g.User.ID < 1 {
-		glog.Errorf("Invalid UserID in game.save(): %v", g.User.ID)
-		return errors.New("game.Save: Invalid UserID")
-	}
-	_, err = stmtUpdateGame.Exec(g.Name, g.ConsoleName, g.Publisher, g.Year, g.ID)
+	_, err = stmtUpdateGame.Exec(g.Name, g.ConsoleName, g.Publisher, g.Year, g.EbayPrice, g.EbayEnds, g.EbayURL, g.ID)
 	if err != nil {
 		glog.Errorf("stmtUpdateGame.Exec(%v,%s,%s,%s,%v): %s", g.ID, g.Name, g.ConsoleName, g.Publisher, g.Year, err)
 		return err
 	}
-	_, err = stmtUpdateUserGame.Exec(g.ID, g.User.ID, g.Has, g.HasManual, g.HasBox, g.Rating, g.Review, g.Want)
-	if err != nil {
-		glog.Errorf("stmtUpdateUserGame.Exec(%v,%v,%v,%v,%v,%v,%s): %s", g.ID, g.User.ID, g.Has, g.HasManual, g.HasBox, g.Rating, g.Review, err)
-		return err
+	if g.User.ID > 0 {
+		_, err = stmtUpdateUserGame.Exec(g.ID, g.User.ID, g.Has, g.HasManual, g.HasBox, g.Rating, g.Review, g.Want)
+		if err != nil {
+			glog.Errorf("stmtUpdateUserGame.Exec(%v,%v,%v,%v,%v,%v,%s): %s", g.ID, g.User.ID, g.Has, g.HasManual, g.HasBox, g.Rating, g.Review, err)
+			return err
+		}
 	}
 	return err
 }
@@ -203,6 +206,23 @@ func (g Game) Owners() int {
 	}
 	return u.Toint(retval)
 }
+func (g *Game) UpdateEbay(eb *ebay.EBay) error {
+	searchstring := fmt.Sprintf("%s %s", g.ConsoleName, g.Name)
+	il, err := eb.Search(searchstring)
+	if err != nil {
+		glog.Errorf("eb.Search(%s): %s", searchstring, err)
+		return err
+	}
+	l := ebay.LowestPricePlusShipping(il)
+	g.EbayPrice = l.Price
+	g.EbayEnds = l.EndTime
+	g.EbayURL = l.Url
+	err = g.Save()
+	if err != nil {
+		glog.Errorf("g.Save(): %s", err)
+	}
+	return err
+}
 
 func InsertGame(g Game) (Game, error) {
 	var err error
@@ -236,7 +256,7 @@ func GetGame(id int, user auth.User) (Game, error) {
 	if user.ID < 1 {
 		return g, errors.New("game.GetGame: Invalid UserID")
 	}
-	err = stmtGetGame.QueryRow(id, id, user.ID).Scan(&g.ID, &g.Name, &g.ConsoleName, &g.Publisher, &g.Year, &g.User.ID, &g.Has, &g.HasManual, &g.HasBox, &g.Rating, &g.Review, &g.Want)
+	err = stmtGetGame.QueryRow(id, id, user.ID).Scan(&g.ID, &g.Name, &g.ConsoleName, &g.Publisher, &g.Year, &g.EbayPrice, &g.EbayUpdated, &g.EbayEnds, &g.EbayURL, &g.User.ID, &g.Has, &g.HasManual, &g.HasBox, &g.Rating, &g.Review, &g.Want)
 	g.User = user
 	if err != nil {
 		e := fmt.Sprintf("GetGame(%v,%s): %s", id, user, err)

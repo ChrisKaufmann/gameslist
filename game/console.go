@@ -110,6 +110,20 @@ func (c Console) OwnedGames() int {
 	}
 	return og
 }
+func (c Console) UserGames() []Game {
+	gl, err := c.Games()
+	var rl []Game
+	if err != nil {
+		glog.Errorf("c.Games(): %s", err)
+		return rl
+	}
+	for _, g := range gl {
+		if g.Has == true {
+			rl = append(rl, g)
+		}
+	}
+	return rl
+}
 func (c Console) Delete() (err error) {
 	if !c.User.Admin {
 		err = errors.New("game.Console.Delete(): User ! admin")

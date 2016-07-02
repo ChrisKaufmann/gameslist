@@ -40,9 +40,7 @@ func TestGame_Save(t *testing.T) {
 	print("Game.Save\n")
 	g := gg(t)
 	user, err := auth.GetUser(1)
-	if err != nil {
-		t.Errorf("auth.GetUser(1): %s", err)
-	}
+	assert.Nil(t, err, "auth.GetUser(1)")
 	g.Name = "GAME TWO"
 	g.ConsoleName = "console2"
 	g.Has = false
@@ -53,41 +51,27 @@ func TestGame_Save(t *testing.T) {
 	g.Publisher = "newman1"
 	g.Year = 2000
 	g.Want = true
+	g.EbayPrice = 3.33
+	g.EbayUpdated = "2016-06-22T20:41:25.000Z"
+	g.EbayEnds = "2017-06-22T20:41:25.000Z"
+	g.EbayURL = "http://ebaything.com/myurl"
 	err = g.Save()
-	if err != nil {
-		t.Errorf("g.Save(): %s", err)
-	}
+	assert.Nil(t, err, "g.Save()")
 	d, err := GetGame(1, user)
-	if err != nil {
-		t.Errorf("GetGame(game1,1): %s", err)
-	}
-	if d.Name != "GAME TWO" {
-		t.Errorf("d.Name GAME TWO <=> %s", d.Name)
-	}
-	if d.Has != false {
-		t.Errorf("d.Has false <=> %v", d.Has)
-	}
-	if d.ConsoleName != "console2" {
-		t.Errorf("d.ConsoleName console2 <=> %s", d.ConsoleName)
-	}
-	if d.HasBox != false {
-		t.Errorf("d.HasBox false <=> %v", d.HasBox)
-	}
-	if d.HasManual != false {
-		t.Errorf("d.HasManual false <=> %v", d.HasManual)
-	}
-	if d.Rating != 5 {
-		t.Errorf("d.Rating 5<=>%v", d.Rating)
-	}
-	if d.Review != "is bad" {
-		t.Errorf("d.Review 'is bad' <=> %s", d.Review)
-	}
-	if d.Publisher != "newman1" {
-		t.Errorf("d.Publisher newman1<=>%s", d.Publisher)
-	}
-	if d.Year != 2000 {
-		t.Errorf("d.Year 2000 <=> %v", d.Year)
-	}
+	assert.Nil(t, err, "GetGame(1,user)")
+	assert.Equal(t, d.Name, "GAME TWO", "Name")
+	assert.False(t, d.Has, "Has")
+	assert.Equal(t, d.ConsoleName, "console2", "consoleName")
+	assert.False(t, d.HasBox, "HasBox")
+	assert.False(t, d.HasManual, "HasManual")
+	assert.Equal(t, d.Rating, 5, "Rating")
+	assert.Equal(t, d.Review, "is bad", "Review")
+	assert.Equal(t, d.Publisher, "newman1", "Publisher")
+	assert.Equal(t, d.Year, 2000, "Year")
+	assert.Equal(t, d.EbayEnds, "2017-06-22 20:41:25", "EbayEnds")
+	assert.Equal(t, d.EbayPrice, 3.33, "EbayPrice")
+	assert.NotEqual(t, d.EbayUpdated, "2016-06-22 20:41:25", "EbayUpdated")
+	assert.Equal(t, d.EbayURL, "http://ebaything.com/myurl", "EbayURL")
 	assert.Equal(t, true, d.Want, "Want")
 }
 func TestGame_Delete(t *testing.T) {

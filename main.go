@@ -83,6 +83,7 @@ func main() {
 	http.HandleFunc("/edit/", handleEdit)
 	http.HandleFunc("/set/game/", handleSetGame)
 	http.HandleFunc("/set/console/", handleSetConsole)
+	http.HandleFunc("/collection", handleCollection)
 	http.HandleFunc("/", handleRoot)
 	print("Listening on port " + port + "\n")
 	http.ListenAndServe("127.0.0.1:"+port, nil)
@@ -159,6 +160,37 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		glog.Infof("%s", err)
 	}
 	fmt.Printf("handleLogin %v\n", time.Now().Sub(t0))
+}
+func handleCollection(w http.ResponseWriter, r *http.Request) {
+	t0 := time.Now()
+	loggedin, user := auth.LoggedIn(w, r)
+	if !loggedin {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	type Meta struct {
+		User     auth.User
+		Consoles []game.Console
+	}
+	cl, err := game.GetConsoles(user)
+	if err != nil {
+		glog.Errorf("game.GetConsoles(user): %s", err)
+		return
+	}
+	var m Meta
+	m.User = user
+	sort.Sort(game.ConsoleName(cl))
+	for _, c := range cl {
+		if c.Has || c.OwnedGames() > 0 {
+			m.Consoles = append(m.Consoles, c)
+		}
+	}
+	if err := tmpl.ExecuteTemplate(w, "collection", m); err != nil {
+		glog.Errorf("ExecuteTemplate(w, collection, m): %s", err)
+		return
+	}
+
+	fmt.Printf("handleCollection %v\n", time.Now().Sub(t0))
 }
 func handleConsole(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()

@@ -70,7 +70,7 @@ func TestGame_Save(t *testing.T) {
 	assert.Equal(t, d.Year, 2000, "Year")
 	assert.Equal(t, d.EbayEnds, "2017-06-22 20:41:25", "EbayEnds")
 	assert.Equal(t, d.EbayPrice, 3.33, "EbayPrice")
-	assert.NotEqual(t, d.EbayUpdated, "2016-06-22 20:41:25", "EbayUpdated")
+	assert.Equal(t, d.EbayUpdated, "2016-06-22 20:41:25", "EbayUpdated")
 	assert.Equal(t, d.EbayURL, "http://ebaything.com/myurl", "EbayURL")
 	assert.Equal(t, true, d.Want, "Want")
 }
@@ -196,15 +196,25 @@ func TestFilter_Request(t *testing.T) {
 	uv.Add("box", "true")
 	assert.Equal(t, len(Filter(gl).Request(&r)), 1, "FilterRequest(box=true)")
 }
+
 func TestGetGamesByIDS(t *testing.T) {
 	print("GetGamesByIDs\n")
 	seedGame()
-	idl := []int{1, 2, 3, 4, 5}
 	user := gu(t)
+	g, err := GetGame(1,user)
+	assert.Nil(t,err,"GetGame(1,user)")
+	g.EbayURL = "My Url"
+	g.EbayEnds = "2017-06-22 20:41:25"
+	g.EbayPrice = 4.32
+	g.EbayUpdated = "2016-06-22 20:41:25"
+	err = g.Save()
+	assert.Nil(t, err, "g.Save()")
+
+	idl := []int{1, 2, 3, 4, 5}
 	gl, err := GetGamesByIDS(idl, user)
 	assert.Nil(t, err, "GetGamesByIDS(idl,user)")
 	assert.Equal(t, 2, len(gl), "len(gamelist)")
-	g := gl[0]
+	g = gl[0]
 	assert.Equal(t, 1, g.User.ID, "g.User.ID")
 	assert.Equal(t, "game1", g.Name, "g.Name")
 	assert.Equal(t, "Nintendo", g.Publisher, "g.Publisher")
@@ -215,6 +225,10 @@ func TestGetGamesByIDS(t *testing.T) {
 	assert.Equal(t, 3, g.Rating, "g.Rating")
 	assert.Equal(t, "is good", g.Review, "g.Review")
 	assert.Equal(t, false, g.Want, "Want")
+	assert.Equal(t, "2016-06-22 20:41:25", g.EbayUpdated, "g.EbayUpdated")
+	assert.Equal(t, 4.32, g.EbayPrice, "g.EbayPrice")
+	assert.Equal(t, "My Url", g.EbayURL, "g.EbayUrl")
+	assert.Equal(t, "2017-06-22 20:41:25", g.EbayEnds, "g.EbayEnds")
 }
 
 func TestGetAllWantedGames(t *testing.T) {
@@ -223,17 +237,13 @@ func TestGetAllWantedGames(t *testing.T) {
 	user := gu(t)
 	c, err := GetConsole("Atari 2600", user)
 	assert.Nil(t, err, "GetConsole(Atari 2600,user)")
+	c2, err := GetConsole("NES", user)
+	assert.Nil(t, err, "GetConsole(NES,user)")
 	print("\tInitial\n")
 	wg, err := GetAllWantedGames()
 	assert.Nil(t, err, "GetAllWantedGames()")
 	assert.Equal(t, 0, len(wg), "GetAllWantedGames")
-	print("\tMarking Console WantGames\n")
-	c.WantGames = true
-	err = c.Save()
-	assert.Nil(t, err, "c.Save()")
-	wg, err = GetAllWantedGames()
-	assert.Nil(t, err, "GetAllWantedGames()")
-	assert.Equal(t, 520, len(wg), "GetAllWantedGames()")
+
 	print("\tMarking individual games\n")
 	g, err := GetGame(1, user)
 	assert.Nil(t, err, "GetGame(1,user)")
@@ -242,7 +252,37 @@ func TestGetAllWantedGames(t *testing.T) {
 	assert.Nil(t, err, "g.Save()")
 	wg, err = GetAllWantedGames()
 	assert.Nil(t, err, "GetAllWantedGames()")
-	assert.Equal(t, 521, len(wg), "GetAllWantedGames()")
+	assert.Equal(t, 1, len(wg), "GetAllWantedGames()")
+
+	print("\tMarking Console WantGames\n")
+	c.WantGames = true
+	err = c.Save()
+	assert.Nil(t, err, "c.Save()")
+	c2.WantGames = true
+	err = c2.Save()
+	assert.Nil(t,err,"c2.Save()")
+	wg, err = GetAllWantedGames()
+	assert.Nil(t, err, "GetAllWantedGames()")
+	assert.Equal(t, 1321, len(wg), "GetAllWantedGames()")
+
+}
+func TestUserWantedGames(t *testing.T) {
+	print("UserWantedGames\n")
+	seedGame()
+	user := gu(t)
+	c, err := GetConsole("Atari 2600", user)
+	assert.Nil(t, err, "GetConsole(Atari 2600,user)")
+	c2, err := GetConsole("NES", user)
+	assert.Nil(t, err, "GetConsole(NES,user)")
+	c.WantGames = true
+	err = c.Save()
+	assert.Nil(t, err, "c.Save()")
+	c2.WantGames = true
+	err = c2.Save()
+	assert.Nil(t,err,"c2.Save()")
+	gl, err := UserWantedGames(user)
+	assert.Nil(t, err, "UserWantedGames(user)")
+	assert.Equal(t, 1321, len(gl), "len(UserWantedGames)")
 
 }
 

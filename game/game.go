@@ -48,6 +48,7 @@ var (
 	stmtGetUserGames            *sql.Stmt
 	stmtGetWantedGamesByConsole *sql.Stmt
 	stmtGetWantedGamesByGame    *sql.Stmt
+	stmtUserWantedGames 	    *sql.Stmt
 )
 
 func GameDB(d *sql.DB) {
@@ -60,7 +61,7 @@ func GameDB(d *sql.DB) {
 		glog.Fatalf("%s: %s", sgg, err)
 	}
 
-	sug := "update games set name=?, console_name=?, publisher=?, year=?, ebay_price=?, ebay_ends=?, ebay_updated=NOW(), ebay_url=? where id=? limit 1"
+	sug := "update games set name=?, console_name=?, publisher=?, year=?, ebay_price=?, ebay_ends=?, ebay_url=?,ebay_updated=? where id=? limit 1"
 	stmtUpdateGame, err = u.Sth(db, sug)
 	if err != nil {
 		glog.Fatalf("u.Sth(db, %s): %s", sug, err)
@@ -120,16 +121,22 @@ func GameDB(d *sql.DB) {
 		glog.Fatalf("u.Sth(db, %s): %s", sql, err)
 	}
 
+	sql = "select distinct(g.id) from games as g, user_consoles as uc, user_games as ug where (uc.wantgames=1 and uc.name=g.console_name and uc.user_id=?) or (ug.user_id=? and ug.want=1 and ug.game_id=g.id)"
+	stmtUserWantedGames, err = u.Sth(db,sql)
+	if err != nil {
+		glog.Fatalf("u.Sth(db, %s): %s", sql, err)
+	}
+
 }
 func (g Game) String() string {
 	return fmt.Sprintf("ID: %v\nName: %s\nConsoleName: %s\nManufacturer: %s\nYear: %v\nUserID: %v\nHas: %v\nHasManual: %v\nHasBox: %v\nRating: %v\nReview: %s\nWant: %v\n", g.ID, g.Name, g.ConsoleName, g.Publisher, g.Year, g.User.ID, g.Has, g.HasManual, g.HasBox, g.Rating, g.Review, g.Want)
 }
-func (g Game) Save() (err error) {
+func (g *Game) Save() (err error) {
 	if g.ID < 1 {
 		glog.Errorf("Invalid ID passed to game.Save(): %v", g.ID)
 		return errors.New("game.Save: invalid ID")
 	}
-	_, err = stmtUpdateGame.Exec(g.Name, g.ConsoleName, g.Publisher, g.Year, g.EbayPrice, g.EbayEnds, g.EbayURL, g.ID)
+	_, err = stmtUpdateGame.Exec(g.Name, g.ConsoleName, g.Publisher, g.Year, g.EbayPrice, g.EbayEnds, g.EbayURL, g.EbayUpdated, g.ID)
 	if err != nil {
 		glog.Errorf("stmtUpdateGame.Exec(%v,%s,%s,%s,%v): %s", g.ID, g.Name, g.ConsoleName, g.Publisher, g.Year, err)
 		return err
@@ -253,9 +260,6 @@ func InsertGame(g Game) (Game, error) {
 func GetGame(id int, user auth.User) (Game, error) {
 	var g Game
 	var err error
-	if user.ID < 1 {
-		return g, errors.New("game.GetGame: Invalid UserID")
-	}
 	err = stmtGetGame.QueryRow(id, id, user.ID).Scan(&g.ID, &g.Name, &g.ConsoleName, &g.Publisher, &g.Year, &g.EbayPrice, &g.EbayUpdated, &g.EbayEnds, &g.EbayURL, &g.User.ID, &g.Has, &g.HasManual, &g.HasBox, &g.Rating, &g.Review, &g.Want)
 	g.User = user
 	if err != nil {
@@ -315,9 +319,9 @@ func GetGamesByIDS(id_list []int, user auth.User) (gl []Game, err error) {
 		id_list_string = append(id_list_string, strconv.Itoa(id))
 	}
 	ids := strings.Join(id_list_string, ",")
-	sql := fmt.Sprintf("select games.id, games.name,games.console_name,IFNULL(publisher,''),IFNULL(year,0),IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,''),IFNULL(want,false) from  games left join user_games on games.id=user_games.game_id where games.id in (%s) OR (games.id in (%s) AND user_games.user_id=%v) ;", ids, ids, user.ID)
+	sql := fmt.Sprintf("select games.id, games.name,games.console_name,IFNULL(publisher,''),IFNULL(year,0),IFNULL(ebay_price,0.0),IFNULL(ebay_updated,''),IFNULL(ebay_ends,''),IFNULL(ebay_url,''),IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,''),IFNULL(want,false) from  games left join user_games on games.id=user_games.game_id where games.id in (%s) OR (games.id in (%s) AND user_games.user_id=%v) ;", ids, ids, user.ID)
 	if user.ID < 1 {
-		sql = fmt.Sprintf("select games.id, games.name,games.console_name,IFNULL(publisher,''),IFNULL(year,0),false,false,false,0,'',false from games where id in (%s)", ids)
+		sql = fmt.Sprintf("select games.id, games.name,games.console_name,IFNULL(publisher,''),IFNULL(year,0),IFNULL(ebay_price,0.0),IFNULL(ebay_updated,''),IFNULL(ebay_ends,''),IFNULL(ebay_url,''),false,false,false,0,'',false from games where id in (%s)", ids)
 	}
 	sth, err := u.Sth(db, sql)
 	if err != nil {
@@ -329,7 +333,7 @@ func GetGamesByIDS(id_list []int, user auth.User) (gl []Game, err error) {
 	}
 	for rows.Next() {
 		var g Game
-		rows.Scan(&g.ID, &g.Name, &g.ConsoleName, &g.Publisher, &g.Year, &g.Has, &g.HasManual, &g.HasBox, &g.Rating, &g.Review, &g.Want)
+		rows.Scan(&g.ID, &g.Name, &g.ConsoleName, &g.Publisher, &g.Year, &g.EbayPrice, &g.EbayUpdated, &g.EbayEnds, &g.EbayURL, &g.Has, &g.HasManual, &g.HasBox, &g.Rating, &g.Review, &g.Want)
 		g.User = user
 		gl = append(gl, g)
 	}
@@ -366,6 +370,24 @@ func GetAllWantedGames() (gl []Game, err error) {
 	gl, err = GetGamesByIDS(idl, user)
 	if err != nil {
 		glog.Errorf("GetGamesByIDS(idl,user): %s", err)
+	}
+	return gl, err
+}
+func UserWantedGames(user auth.User) (gl []Game, err error) {
+	var idl []int
+	rows, err := stmtUserWantedGames.Query(user.ID, user.ID)
+	if err != nil {
+		glog.Errorf("stmtUserWantedGames.Query(%v,%v): %s", user.ID, user.ID, err)
+		return gl, err
+	}
+	for rows.Next() {
+		var id int
+		rows.Scan(&id)
+		idl = append(idl, id)
+	}
+	gl, err = GetGamesByIDS(idl, user)
+	if err != nil {
+		glog.Errorf("GetGamesByIDS(list..., user): %s", err)
 	}
 	return gl, err
 }

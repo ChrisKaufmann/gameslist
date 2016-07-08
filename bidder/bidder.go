@@ -1,23 +1,23 @@
 package main
+
 import (
 	"../game"
-	"github.com/golang/glog"
-	"github.com/msbranco/goconfig"
-	"flag"
 	"database/sql"
-	"github.com/ChrisKaufmann/goauth"
+	"flag"
 	"fmt"
 	"github.com/ChrisKaufmann/ebay-go"
+	"github.com/ChrisKaufmann/goauth"
+	"github.com/golang/glog"
+	"github.com/msbranco/goconfig"
 	"math/rand"
 )
 
 var (
 	ebay_application_id string
-	eb *ebay.EBay
-	user auth.User
-	db *sql.DB
+	eb                  *ebay.EBay
+	user                auth.User
+	db                  *sql.DB
 )
-
 
 func init() {
 	var err error
@@ -43,12 +43,12 @@ func init() {
 	if err != nil {
 		glog.Fatalf("Init():sql.Open(mysql, %s:%s@%s/%s: %s", db_user, db_pass, db_host, db_name, err)
 	}
-	ebay_application_id, err = c.GetString("Ebay","ApplicationID")
+	ebay_application_id, err = c.GetString("Ebay", "ApplicationID")
 	if err != nil {
 		glog.Fatalf("init():Config.GetString(Ebay,ApplicationID): %s", err)
 	}
 	eb = ebay.New(ebay_application_id)
-	ebay_url, err := c.GetString("Ebay","URL")
+	ebay_url, err := c.GetString("Ebay", "URL")
 	if err == nil {
 		eb.URL = ebay_url
 	}
@@ -71,10 +71,10 @@ func main() {
 	fmt.Printf("Len(wantedgames): %v\n", len(wantedgames))
 	c := make(chan game.Game)
 	var ugl []game.Game
-	for i := 0; i <10; i++ {
+	for i := 0; i < 10; i++ {
 		go ProcessGameSearch(&ugl, c)
 	}
-	for _,i := range wantedgames {
+	for _, i := range wantedgames {
 		c <- i
 	}
 
@@ -86,6 +86,7 @@ func ProcessGameSearch(ugl *[]game.Game, queue chan game.Game) {
 	fmt.Printf("ProcessGameSearch\n")
 	for r := range queue {
 		r.UpdateEbay(eb)
+		print(".")
 		*ugl = append(*ugl, r)
 	}
 }

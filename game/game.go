@@ -48,13 +48,13 @@ var (
 	stmtGetUserGames            *sql.Stmt
 	stmtGetWantedGamesByConsole *sql.Stmt
 	stmtGetWantedGamesByGame    *sql.Stmt
-	stmtUserWantedGames 	    *sql.Stmt
+	stmtUserWantedGames         *sql.Stmt
 )
 
 func GameDB(d *sql.DB) {
 	var err error
 	db = d
-	gameselect := "games.id, games.name,games.console_name,IFNULL(publisher,''),IFNULL(year,0),IFNULL(ebay_price,0.0),IFNULL(ebay_updated,''),IFNULL(ebay_ends,''),IFNULL(ebay_url,''),IFNULL(user_id,0),IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,''),IFNULL(want,false)"
+	gameselect := "games.id, games.name,games.console_name,IFNULL(publisher,''),IFNULL(year,0),IF(ebay_ends > NOW(),ebay_price,0.0),IFNULL(ebay_updated,''),IFNULL(ebay_ends,''),IFNULL(ebay_url,''),IFNULL(user_id,0),IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,''),IFNULL(want,false)"
 	sgg := "select " + gameselect + " from games left join user_games on games.id=user_games.game_id where games.id=? OR (games.id=? AND user_games.user_id=?)"
 	stmtGetGame, err = u.Sth(db, sgg)
 	if err != nil {
@@ -122,7 +122,7 @@ func GameDB(d *sql.DB) {
 	}
 
 	sql = "select distinct(g.id) from games as g, user_consoles as uc, user_games as ug where (uc.wantgames=1 and uc.name=g.console_name and uc.user_id=?) or (ug.user_id=? and ug.want=1 and ug.game_id=g.id)"
-	stmtUserWantedGames, err = u.Sth(db,sql)
+	stmtUserWantedGames, err = u.Sth(db, sql)
 	if err != nil {
 		glog.Fatalf("u.Sth(db, %s): %s", sql, err)
 	}
@@ -130,6 +130,9 @@ func GameDB(d *sql.DB) {
 }
 func (g Game) String() string {
 	return fmt.Sprintf("ID: %v\nName: %s\nConsoleName: %s\nManufacturer: %s\nYear: %v\nUserID: %v\nHas: %v\nHasManual: %v\nHasBox: %v\nRating: %v\nReview: %s\nWant: %v\n", g.ID, g.Name, g.ConsoleName, g.Publisher, g.Year, g.User.ID, g.Has, g.HasManual, g.HasBox, g.Rating, g.Review, g.Want)
+}
+func (g Game) Price() string {
+	return fmt.Sprintf("%.2f", g.EbayPrice)
 }
 func (g *Game) Save() (err error) {
 	if g.ID < 1 {
@@ -221,9 +224,10 @@ func (g *Game) UpdateEbay(eb *ebay.EBay) error {
 		return err
 	}
 	l := ebay.LowestPricePlusShipping(il)
-	g.EbayPrice = l.Price
+	g.EbayPrice = l.Price + l.ShippingPrice
 	g.EbayEnds = l.EndTime
 	g.EbayURL = l.Url
+	fmt.Printf("%s\t%v\t%v\n", g.Name, l.Price, l.ShippingPrice)
 	err = g.Save()
 	if err != nil {
 		glog.Errorf("g.Save(): %s", err)
@@ -266,6 +270,7 @@ func GetGame(id int, user auth.User) (Game, error) {
 		e := fmt.Sprintf("GetGame(%v,%s): %s", id, user, err)
 		err = errors.New(e)
 	}
+
 	return g, err
 }
 func GetGamesByConsole(c Console) (gl []Game, err error) {
@@ -319,7 +324,7 @@ func GetGamesByIDS(id_list []int, user auth.User) (gl []Game, err error) {
 		id_list_string = append(id_list_string, strconv.Itoa(id))
 	}
 	ids := strings.Join(id_list_string, ",")
-	sql := fmt.Sprintf("select games.id, games.name,games.console_name,IFNULL(publisher,''),IFNULL(year,0),IFNULL(ebay_price,0.0),IFNULL(ebay_updated,''),IFNULL(ebay_ends,''),IFNULL(ebay_url,''),IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,''),IFNULL(want,false) from  games left join user_games on games.id=user_games.game_id where games.id in (%s) OR (games.id in (%s) AND user_games.user_id=%v) ;", ids, ids, user.ID)
+	sql := fmt.Sprintf("select games.id, games.name,games.console_name,IFNULL(publisher,''),IFNULL(year,0),IF(ebay_ends > NOW(),ebay_price,0.0),IFNULL(ebay_updated,''),IFNULL(ebay_ends,''),IFNULL(ebay_url,''),IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,''),IFNULL(want,false) from  games left join user_games on games.id=user_games.game_id where games.id in (%s) OR (games.id in (%s) AND user_games.user_id=%v) ;", ids, ids, user.ID)
 	if user.ID < 1 {
 		sql = fmt.Sprintf("select games.id, games.name,games.console_name,IFNULL(publisher,''),IFNULL(year,0),IFNULL(ebay_price,0.0),IFNULL(ebay_updated,''),IFNULL(ebay_ends,''),IFNULL(ebay_url,''),false,false,false,0,'',false from games where id in (%s)", ids)
 	}
@@ -426,6 +431,24 @@ func (a Filter) Manual(tf bool) []Game {
 		}
 	}
 	return gl
+}
+func (a Filter) Cheapest() Game {
+	sort.Sort(GameByPrice(a))
+	return a[0]
+}
+
+type GameByPrice []Game
+
+func (a GameByPrice) Len() int      { return len(a) }
+func (a GameByPrice) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a GameByPrice) Less(i, j int) bool {
+	if a[i].EbayPrice < 0.01 {
+		return false
+	}
+	if a[j].EbayPrice < 0.01 {
+		return true
+	}
+	return a[i].EbayPrice < a[j].EbayPrice
 }
 
 func (a Filter) Request(r *http.Request) []Game {

@@ -118,12 +118,19 @@ func handleMain(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Sort(game.ConsoleName(cl))
 	type Meta struct {
-		User     auth.User
-		Consoles []game.Console
+		User         auth.User
+		Consoles     []game.Console
+		CheapestGame game.Game
 	}
 	var m Meta
 	m.User = user
 	m.Consoles = cl
+	wl, err := game.UserWantedGames(user)
+	if err != nil {
+		glog.Errorf("game.UserWantedGames(user): %s", err)
+		return
+	}
+	m.CheapestGame = game.Filter(wl).Cheapest()
 	if err := tmpl.ExecuteTemplate(w, "main_html", m); err != nil {
 		glog.Errorf("tmpl.ExecuteTemplate(w, main_html, cl): %s", err)
 	}
@@ -169,8 +176,9 @@ func handleCollection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	type Meta struct {
-		User     auth.User
-		Consoles []game.Console
+		User         auth.User
+		Consoles     []game.Console
+		CheapestGame game.Game
 	}
 	cl, err := game.GetConsoles(user)
 	if err != nil {
@@ -179,6 +187,13 @@ func handleCollection(w http.ResponseWriter, r *http.Request) {
 	}
 	var m Meta
 	m.User = user
+	wl, err := game.UserWantedGames(user)
+	if err != nil {
+		glog.Errorf("game.UserWantedGames(user): %s", err)
+		return
+	}
+	m.CheapestGame = game.Filter(wl).Cheapest()
+
 	sort.Sort(game.ConsoleName(cl))
 	for _, c := range cl {
 		if c.Has || c.OwnedGames() > 0 {
@@ -201,15 +216,23 @@ func handleConsole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	type Meta struct {
-		User     auth.User
-		Consoles []game.Console
-		Url      string
-		Has      bool
-		Box      bool
-		Manual   bool
+		User         auth.User
+		Consoles     []game.Console
+		CheapestGame game.Game
+		Url          string
+		Has          bool
+		Box          bool
+		Manual       bool
 	}
 	var m Meta
 	m.User = user
+	wl, err := game.UserWantedGames(user)
+	if err != nil {
+		glog.Errorf("game.UserWantedGames(user): %s", err)
+		return
+	}
+	m.CheapestGame = game.Filter(wl).Cheapest()
+
 	if err := tmpl.ExecuteTemplate(w, "main_html", m); err != nil {
 		glog.Errorf("Execute main_html: %s", err)
 		return
@@ -342,13 +365,21 @@ func handleEdit(w http.ResponseWriter, r *http.Request) {
 			glog.Errorf("GetConsole(%s,user): %s", r.PostFormValue("name"), err)
 		}
 		type Meta struct {
-			User    auth.User
-			Message template.HTML
-			Console game.Console
+			User         auth.User
+			Message      template.HTML
+			Console      game.Console
+			CheapestGame game.Game
 		}
 		var meta Meta
 		meta.User = user
 		meta.Console = c
+		wl, err := game.UserWantedGames(user)
+		if err != nil {
+			glog.Errorf("game.UserWantedGames(user): %s", err)
+			return
+		}
+		meta.CheapestGame = game.Filter(wl).Cheapest()
+
 		switch r.PostFormValue("action") {
 		case "submit":
 			c.Name = r.PostFormValue("name")
@@ -389,13 +420,20 @@ func handleEdit(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		type Meta struct {
-			User    auth.User
-			Game    game.Game
-			Message template.HTML
+			User         auth.User
+			CheapestGame game.Game
+			Game         game.Game
+			Message      template.HTML
 		}
 		var meta Meta
 		meta.User = user
 		meta.Game = g
+		wl, err := game.UserWantedGames(user)
+		if err != nil {
+			glog.Errorf("game.UserWantedGames(user): %s", err)
+			return
+		}
+		meta.CheapestGame = game.Filter(wl).Cheapest()
 		switch r.PostFormValue("action") {
 		case "submit":
 			g.Name = r.PostFormValue("name")

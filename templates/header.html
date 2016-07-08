@@ -17,7 +17,7 @@
                         <input type='text' name='search_text' id='search_text' placeholder='Search'>
                     </div>
                 </td>
-                {{if .Admin}}
+                {{if .User.Admin}}
                 <td>
                     <div id="add"><a href="/add/"><img src="/static/add.png" height="20" id="add_img"></a></div>
                 </td>
@@ -28,6 +28,11 @@
                 <td>
                     <div id="mycollection"><a href="/collection">My</a></div>
                 </td>
+                {{ if .CheapestGame }}
+                <td>
+                    <a href="{{.CheapestGame.EbayURL}}" target="_blank">{{.CheapestGame.Name}}</a>${{.CheapestGame.Price}}
+                </td>
+                {{ end }}
                 <td>
                     <div id="logout"><a href="/logout"><img src='/static/logout.png' id='logout_img' height="20"></a></div>
                 </td>

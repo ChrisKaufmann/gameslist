@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os/exec"
+	"strconv"
 	"testing"
 )
 
@@ -53,7 +54,7 @@ func TestGame_Save(t *testing.T) {
 	g.Want = true
 	g.EbayPrice = 3.33
 	g.EbayUpdated = "2016-06-22T20:41:25.000Z"
-	g.EbayEnds = "2017-06-22T20:41:25.000Z"
+	g.EbayEnds = "2917-06-22T20:41:25.000Z"
 	g.EbayURL = "http://ebaything.com/myurl"
 	err = g.Save()
 	assert.Nil(t, err, "g.Save()")
@@ -68,7 +69,7 @@ func TestGame_Save(t *testing.T) {
 	assert.Equal(t, d.Review, "is bad", "Review")
 	assert.Equal(t, d.Publisher, "newman1", "Publisher")
 	assert.Equal(t, d.Year, 2000, "Year")
-	assert.Equal(t, d.EbayEnds, "2017-06-22 20:41:25", "EbayEnds")
+	assert.Equal(t, d.EbayEnds, "2917-06-22 20:41:25", "EbayEnds")
 	assert.Equal(t, d.EbayPrice, 3.33, "EbayPrice")
 	assert.Equal(t, d.EbayUpdated, "2016-06-22 20:41:25", "EbayUpdated")
 	assert.Equal(t, d.EbayURL, "http://ebaything.com/myurl", "EbayURL")
@@ -151,6 +152,14 @@ func TestGetGamesByConsole(t *testing.T) {
 	assert.Nil(t, err, "GetGamesByConsole()")
 	assert.Equal(t, 801, len(gl), "GetGamesByConsole")
 }
+func TestGame_Price(t *testing.T) {
+	print("Game.Price()\n")
+	g := gg(t)
+	g.EbayPrice = 3.333333
+	err := g.Save()
+	assert.Nil(t, err, "g.Save()")
+	assert.Equal(t, "3.33", g.Price(), "g.Price()")
+}
 
 func TestFilter_Box(t *testing.T) {
 	print("Filter_Box\n")
@@ -176,7 +185,6 @@ func TestFilter_Manual(t *testing.T) {
 	assert.Equal(t, 1, len(Filter(gl).Manual(true)), "FilterManual(true)")
 	assert.Equal(t, 800, len(Filter(gl).Manual(false)), "FilterManual(false)")
 }
-
 func TestFilter_Request(t *testing.T) {
 	print("Filter_Request\n")
 	c := gsc(t)
@@ -196,13 +204,31 @@ func TestFilter_Request(t *testing.T) {
 	uv.Add("box", "true")
 	assert.Equal(t, len(Filter(gl).Request(&r)), 1, "FilterRequest(box=true)")
 }
+func TestFilter_Cheapest(t *testing.T) {
+	print("Filter_Cheapest\n")
+	c := gsc(t)
+	gl, err := c.Games()
+	assert.Nil(t, err, "c.Games()")
+	for i := 0; i < 10; i++ {
+		var err error
+		gl[i].EbayPrice, err = strconv.ParseFloat(fmt.Sprintf("%v.01", i), 64)
+		assert.Nil(t, err, "strconv")
+		err = gl[i+10].Save()
+		assert.Nil(t, err, "gl[i].save()")
+	}
+	gl[0].EbayPrice = 0.00
+	err = gl[0].Save()
+	assert.Nil(t, err, "gl.save()")
+	g := Filter(gl).Cheapest()
+	assert.Equal(t, 1.01, g.EbayPrice, "EbayPrice")
+}
 
 func TestGetGamesByIDS(t *testing.T) {
 	print("GetGamesByIDs\n")
 	seedGame()
 	user := gu(t)
-	g, err := GetGame(1,user)
-	assert.Nil(t,err,"GetGame(1,user)")
+	g, err := GetGame(1, user)
+	assert.Nil(t, err, "GetGame(1,user)")
 	g.EbayURL = "My Url"
 	g.EbayEnds = "2017-06-22 20:41:25"
 	g.EbayPrice = 4.32
@@ -260,7 +286,7 @@ func TestGetAllWantedGames(t *testing.T) {
 	assert.Nil(t, err, "c.Save()")
 	c2.WantGames = true
 	err = c2.Save()
-	assert.Nil(t,err,"c2.Save()")
+	assert.Nil(t, err, "c2.Save()")
 	wg, err = GetAllWantedGames()
 	assert.Nil(t, err, "GetAllWantedGames()")
 	assert.Equal(t, 1321, len(wg), "GetAllWantedGames()")
@@ -279,7 +305,7 @@ func TestUserWantedGames(t *testing.T) {
 	assert.Nil(t, err, "c.Save()")
 	c2.WantGames = true
 	err = c2.Save()
-	assert.Nil(t,err,"c2.Save()")
+	assert.Nil(t, err, "c2.Save()")
 	gl, err := UserWantedGames(user)
 	assert.Nil(t, err, "UserWantedGames(user)")
 	assert.Equal(t, 1321, len(gl), "len(UserWantedGames)")

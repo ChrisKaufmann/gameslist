@@ -1,5 +1,5 @@
 {{define "collection"}}
-    {{template "header" .User}}
+    {{template "header" .}}
     {{range $index, $val := .Consoles}}
         {{template "console_entry" .}}
         {{template "games_list" .UserGames }}

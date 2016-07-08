@@ -40,7 +40,7 @@
 {{ end }}
 
 {{ define "edit_console"}}
-{{template "header"}}
+{{template "header" .}}
 <form  name="editconsole" action="/edit/console/?name={{.Console.Name}}" method="POST">
     {{.Message}}
     <input type="hidden" name="action" value="submit">

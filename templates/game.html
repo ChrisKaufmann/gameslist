@@ -53,7 +53,7 @@
 {{ end }}
 
 {{ define "edit_game" }}
-{{template "header" .User}}
+{{template "header" .}}
 <form  name="editgame" action="/edit/game/?id={{.Game.ID}}" method="POST">
     <input type="hidden" name="action" value="submit">
     <table>

@@ -14,7 +14,7 @@
                 <td align="top"><div id="mycoll"><a href='/'><img src='/static/home.jpg' id='home_img' height="20"></a></div></td>
                 <td align="center">
                     <div id="search_div" style="width:100%;float:left">
-                        <input type='text' name='search_text' id='search_text' placeholder='Search'>
+                        <input type='text' name='search_text' id='search_text' placeholder='Search' {{if .Search}}value="{{.Search}}" {{end}}>
                     </div>
                 </td>
                 {{if .User.Admin}}
@@ -30,7 +30,7 @@
                 </td>
                 {{ if .CheapestGame }}
                 <td>
-                    <a href="{{.CheapestGame.EbayURL}}" target="_blank">{{.CheapestGame.Name}}</a>${{.CheapestGame.Price}}
+                    <div id="cheapest"><a href="{{.CheapestGame.EbayURL}}" target="_blank">{{.CheapestGame.Name}}</a>${{.CheapestGame.Price}}</div>
                 </td>
                 {{ end }}
                 <td>

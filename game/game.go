@@ -227,7 +227,7 @@ func (g *Game) UpdateEbay(eb *ebay.EBay) error {
 	g.EbayPrice = l.Price + l.ShippingPrice
 	g.EbayEnds = l.EndTime
 	g.EbayURL = l.Url
-	fmt.Printf("%s\t%v\t%v\n", g.Name, l.Price, l.ShippingPrice)
+	fmt.Printf("%48s\t%v\t%v\t%s\n", g.Name, l.Price, l.ShippingPrice, l.ShippingType)
 	err = g.Save()
 	if err != nil {
 		glog.Errorf("g.Save(): %s", err)

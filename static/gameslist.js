@@ -135,12 +135,11 @@ function save_game_manual(id,elem)
 }
 function save_console_manual(id,elem)
 {
-	var data="action=hasnot_manual&name="+id;
+	var data="action=hasnot_manual&&name="+id;
 	if (document.getElementById(elem).checked)
 	{
 		data="action=has_manual&name="+id;
-	}
-	$.ajax({type: "POST", url: '/set/console/'+id, data:data, success:function(html)
+	}	$.ajax({type: "GET", url: '/set/console/?'+data, success:function(html)
 	{
 	}})
 }

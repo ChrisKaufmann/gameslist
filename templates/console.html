@@ -11,11 +11,12 @@
         {{end}}
     </div>
     <div id="manyear{{.ShortName}}">{{if .Manufacturer}}{{.Manufacturer}}{{end}}  {{if .Year}}{{.Year}}{{end}}</div>
-    Manual: {{if .HasManual}}
-        Y/<a href="/set/console/?name={{.Name}}&action=hasnot_manual&value=false">n</a>
-    {{else}}
-        <a href="/set/console/?name={{.Name}}&action=has_manual&value=true">Y</a>/n
-    {{end}}<br>
+    <div id="manual{{.ShortName}}">
+        <input type="checkbox" id="checkbox-{{.ShortName}}-manual" {{if .HasManual}}checked{{end}} onchange="save_console_manual('{{.Name}}','checkbox-{{.ShortName}}-manual')">Manual
+    </div>
+    <div id="box{{.ShortName}}">
+        <input type="checkbox" id="checkbox-{{.ShortName}}-box" {{if .HasBox}}Checked{{end}} onchange="save_console_box('{{.Name}}','checkbox-{{.ShortName}}-box')">Box
+    </div>
     Box: {{if .HasBox}}
         Y/<a href="/set/console/?name={{.Name}}&action=hasnot_box&value=false">n</a>
     {{else}}

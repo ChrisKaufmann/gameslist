@@ -10,3 +10,5 @@ ClientSecret=WG0dpkjHnreoG85OvwXk16O7
 port=9005
 url=https://gameslist.chriskaufmann.com/
 environment=demo
+[Ebay]
+ApplicationID=ChrisKau-chriskau-PRD-78a129233-774a2910

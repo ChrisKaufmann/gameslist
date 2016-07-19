@@ -83,10 +83,9 @@ func main() {
 	}
 }
 func ProcessGameSearch(ugl *[]game.Game, queue chan game.Game) {
-	fmt.Printf("ProcessGameSearch\n")
+	fmt.Printf("Starting ProcessGameSearch Thread\n")
 	for r := range queue {
 		r.UpdateEbay(eb)
-		print(".")
 		*ugl = append(*ugl, r)
 	}
 }

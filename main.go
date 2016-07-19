@@ -121,6 +121,7 @@ func handleMain(w http.ResponseWriter, r *http.Request) {
 		User         auth.User
 		Consoles     []game.Console
 		CheapestGame game.Game
+		Search       string
 	}
 	var m Meta
 	m.User = user
@@ -179,6 +180,7 @@ func handleCollection(w http.ResponseWriter, r *http.Request) {
 		User         auth.User
 		Consoles     []game.Console
 		CheapestGame game.Game
+		Search       string
 	}
 	cl, err := game.GetConsoles(user)
 	if err != nil {
@@ -223,6 +225,7 @@ func handleConsole(w http.ResponseWriter, r *http.Request) {
 		Has          bool
 		Box          bool
 		Manual       bool
+		Search       string
 	}
 	var m Meta
 	m.User = user
@@ -301,6 +304,7 @@ func handleAdd(w http.ResponseWriter, r *http.Request) {
 		User     auth.User
 		Message  template.HTML
 		Consoles []game.Console
+		Search   string
 	}
 	var meta Meta
 	meta.User = user
@@ -369,6 +373,7 @@ func handleEdit(w http.ResponseWriter, r *http.Request) {
 			Message      template.HTML
 			Console      game.Console
 			CheapestGame game.Game
+			Search       string
 		}
 		var meta Meta
 		meta.User = user
@@ -424,6 +429,7 @@ func handleEdit(w http.ResponseWriter, r *http.Request) {
 			CheapestGame game.Game
 			Game         game.Game
 			Message      template.HTML
+			Search       string
 		}
 		var meta Meta
 		meta.User = user
@@ -571,11 +577,6 @@ func handleSetConsole(w http.ResponseWriter, r *http.Request) {
 	default:
 		glog.Errorf("Invalid action passed to set console: %s", r.FormValue("action"))
 	}
-	var cl []game.Console
-	cl = append(cl, c)
-	if err := tmpl.ExecuteTemplate(w, "main_html", cl); err != nil {
-		glog.Errorf("ExecuteTemplate(w, consoles_list, cl): %s", err)
-	}
 	fmt.Printf("handleSetConsole %v\n", time.Now().Sub(t0))
 }
 func handleSetGame(w http.ResponseWriter, r *http.Request) {
@@ -678,16 +679,23 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	cml := make(map[string][]game.Game)
 	type Meta struct {
-		ConsoleMeta []game.ConsoleMeta
-		User        auth.User
-		Search      string
-		Url         string
-		Has         bool
-		Box         bool
-		Manual      bool
+		ConsoleMeta  []game.ConsoleMeta
+		CheapestGame game.Game
+		User         auth.User
+		Search       string
+		Url          string
+		Has          bool
+		Box          bool
+		Manual       bool
 	}
 	var meta Meta
 	meta.User = user
+	wl, err := game.UserWantedGames(user)
+	if err != nil {
+		glog.Errorf("game.UserWantedGames(user): %s", err)
+		return
+	}
+	meta.CheapestGame = game.Filter(wl).Cheapest()
 	meta.Url = "/search/?query=" + r.FormValue("query") + "&"
 	gl, err := game.SearchGames(r.FormValue("query"), user)
 	if err != nil {

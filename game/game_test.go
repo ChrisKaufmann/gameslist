@@ -52,7 +52,7 @@ func TestGame_Save(t *testing.T) {
 	g.Publisher = "newman1"
 	g.Year = 2000
 	g.Want = true
-	g.EbayPrice = 3.33
+	g.EbayPrice = 33.33
 	g.EbayUpdated = "2016-06-22T20:41:25.000Z"
 	g.EbayEnds = "2917-06-22T20:41:25.000Z"
 	g.EbayURL = "http://ebaything.com/myurl"
@@ -70,7 +70,7 @@ func TestGame_Save(t *testing.T) {
 	assert.Equal(t, d.Publisher, "newman1", "Publisher")
 	assert.Equal(t, d.Year, 2000, "Year")
 	assert.Equal(t, d.EbayEnds, "2917-06-22 20:41:25", "EbayEnds")
-	assert.Equal(t, d.EbayPrice, 3.33, "EbayPrice")
+	assert.Equal(t, d.EbayPrice, 33.33, "EbayPrice")
 	assert.Equal(t, d.EbayUpdated, "2016-06-22 20:41:25", "EbayUpdated")
 	assert.Equal(t, d.EbayURL, "http://ebaything.com/myurl", "EbayURL")
 	assert.Equal(t, true, d.Want, "Want")
@@ -415,6 +415,7 @@ func TestInsertGame(t *testing.T) {
 		t.Errorf("New len (%v) != old len(%v)+1", c2l, cl)
 	}
 }
+
 func initGame() {
 	g, err := goconfig.ReadConfigFile("test_config")
 	db_name, err := g.GetString("DB", "db")

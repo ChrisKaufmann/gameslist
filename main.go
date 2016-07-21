@@ -72,7 +72,7 @@ func main() {
 	http.HandleFunc("/main.html", handleMain)
 	http.HandleFunc("/authorize", auth.HandleAuthorize)
 	http.HandleFunc("/settings", handleSettings)
-	http.HandleFunc("/oauth2callback", auth.HandleOAuth2Callback)
+	http.HandleFunc("/oauth2callback", auth.HandleGoogleCallback)
 	http.HandleFunc("/logout", auth.HandleLogout)
 	http.HandleFunc("/login/", handleLogin)
 	http.HandleFunc("/search/", handleSearch)
@@ -84,6 +84,7 @@ func main() {
 	http.HandleFunc("/set/game/", handleSetGame)
 	http.HandleFunc("/set/console/", handleSetConsole)
 	http.HandleFunc("/collection", handleCollection)
+	http.HandleFunc("/wanted/", handleWanted)
 	http.HandleFunc("/", handleRoot)
 	print("Listening on port " + port + "\n")
 	http.ListenAndServe("127.0.0.1:"+port, nil)
@@ -208,6 +209,38 @@ func handleCollection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Printf("handleCollection %v\n", time.Now().Sub(t0))
+}
+func handleWanted(w http.ResponseWriter, r *http.Request) {
+	t0 := time.Now()
+	loggedin, user := auth.LoggedIn(w, r)
+	if !loggedin {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	type Meta struct {
+		User         auth.User
+		Consoles     []game.Console
+		CheapestGame game.Game
+		Url          string
+		Has          bool
+		Box          bool
+		Manual       bool
+		Search       string
+	}
+	var m Meta
+	m.User = user
+	m.Url = "/wanted/"
+	wl, err := game.UserWantedGames(user)
+	if err != nil {
+		glog.Errorf("game.UserWantedGames(user): %s", err)
+		return
+	}
+	switch r.FormValue("sort") {
+	case "soonest":
+		sort.Sort(game.GameByEndingSoonest(wl))
+	}
+
+	fmt.Printf("handleWanted %v\n", time.Now().Sub(t0))
 }
 func handleConsole(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()

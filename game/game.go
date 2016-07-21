@@ -432,9 +432,23 @@ func (a Filter) Manual(tf bool) []Game {
 	}
 	return gl
 }
-func (a Filter) Cheapest() Game {
+func (a Filter) Cheapest() (g Game) {
+	if len(a) < 1 {
+		return g
+	}
+	if len(a) == 1 {
+		return a[0]
+	}
 	sort.Sort(GameByPrice(a))
 	return a[0]
+}
+
+type GameByEndingSoonest []Game
+
+func (a GameByEndingSoonest) Len() int      { return len(a) }
+func (a GameByEndingSoonest) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a GameByEndingSoonest) Less(i, j int) bool {
+	return a[i].EbayEnds < a[j].EbayEnds
 }
 
 type GameByPrice []Game

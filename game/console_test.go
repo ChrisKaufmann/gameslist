@@ -133,7 +133,7 @@ func TestConsole_OwnedGames(t *testing.T) {
 	print("Console.OwnedGames()\n")
 	print("\tInitial\n")
 	seedConsole()
-	seedGame()
+	seedConsole()
 	user := gu(t)
 	c := gsc(t)
 	ogc := c.OwnedGames()
@@ -219,6 +219,39 @@ func TestConsole_WantedGames(t *testing.T) {
 	}
 	assert.Equal(t, 800, len(wg), "WantedGames(console.WantGames=true)")
 }
+func TestConsole_CheapestGame(t *testing.T) {
+	print("Console.CheapestGame\n")
+	seedConsole()
+	user, err := auth.GetUser(1)
+	if err != nil {
+		t.Errorf("GetUser(1): %s", err)
+	}
+	c, err := GetConsole("NES", user)
+	assert.Nil(t, err, "GetConsole(NES,user)")
+	c.WantGames = true
+	c.Save()
+	p := 1.01
+	gl, err := c.WantedGames()
+	fmt.Printf("len(wantedgames): %v\n", len(gl))
+	assert.Nil(t, err, "c.Games()")
+	for _, g := range gl {
+		g.EbayPrice = p
+		g.Want = true
+		p = p + 1.01
+		g.EbayEnds = "2999-01-01 01:00:00"
+		err := g.Save()
+		assert.Nil(t, err, "g.Save()")
+	}
+
+	d, err := GetConsole("NES", user)
+	if err != nil {
+		t.Errorf("GetConsole(NES,user): %s", err)
+	}
+	g := d.CheapestGame()
+	assert.Equal(t, 1.01, g.EbayPrice, "EbayPrice")
+	fmt.Printf("%s, %.2v\n", g.Name, g.EbayPrice)
+}
+
 func initConsole() {
 	c, err := goconfig.ReadConfigFile("test_config")
 	db_name, err := c.GetString("DB", "db")

@@ -37,6 +37,10 @@
                 </td>
             </tr>
             <tr>
+                <td></td>
+                <td><a href="{{.EbayURL}}" target="_blank">{{.Price}}</a></td>
+            </tr>
+            <tr>
                 <td><h4>Review</h4>
                 <td><input type="text" size=20 id="review_text_{{.ID}}" placeholder="Add Review" value="{{.Review}}"></td>
                 <td><input type="button" value="Save" onclick="save_game_review({{.ID}})"></td>

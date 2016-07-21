@@ -8,6 +8,7 @@ import (
 	u "github.com/ChrisKaufmann/goutils"
 	"github.com/golang/glog"
 	"html/template"
+	"sort"
 	"strings"
 )
 
@@ -182,6 +183,20 @@ func (c Console) WantedGames() (rl []Game, err error) {
 		}
 	}
 	return rl, err
+}
+func (c Console) CheapestGame() (g Game) {
+	gl, err := c.WantedGames()
+	if len(gl) == 1 {
+		return gl[0]
+	}
+	if len(gl) == 0 {
+		return g
+	}
+	if err != nil {
+		glog.Errorf("c.WantedGames(): %s", err)
+	}
+	sort.Sort(GameByPrice(gl))
+	return gl[0]
 }
 
 func GetConsole(name string, user auth.User) (Console, error) {

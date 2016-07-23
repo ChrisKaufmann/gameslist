@@ -530,7 +530,7 @@ func handleSetConsole(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		glog.Errorf("GetConsole(%v,%v): %s", name, user, err)
 	}
-	fmt.Printf("in HandleSetConsole: Console:\n%s--------\n", c)
+	fmt.Printf("in HandleSetConsole: Console: %sAction: %s--------\n", c, r.FormValue("action"))
 	switch r.FormValue("action") {
 	case "setrating":
 		c.Rating = u.Toint(r.FormValue("rating"))
@@ -610,6 +610,7 @@ func handleSetConsole(w http.ResponseWriter, r *http.Request) {
 	default:
 		glog.Errorf("Invalid action passed to set console: %s", r.FormValue("action"))
 	}
+	fmt.Printf("Updated Console: %s\n", c)
 	fmt.Printf("handleSetConsole %v\n", time.Now().Sub(t0))
 }
 func handleSetGame(w http.ResponseWriter, r *http.Request) {

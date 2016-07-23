@@ -31,6 +31,7 @@ var (
 	stmtGetConsoles      *sql.Stmt
 	stmtGetUserConsoles  *sql.Stmt
 	stmtGetConsole       *sql.Stmt
+	stmtGetUserConsole   *sql.Stmt
 	stmtUpdateConsole    *sql.Stmt
 	stmtUpdateHasConsole *sql.Stmt
 	stmtDeleteConsole    *sql.Stmt
@@ -44,9 +45,14 @@ func ConsoleDB(d *sql.DB) {
 	if err != nil {
 		glog.Fatalf("u.Sth(db,select id, IFNULL(name,''),IFNULL(manufacturer,''),IFNULL(year,0) from consoles): %s", err)
 	}
-	stmtGetConsole, err = u.Sth(db, "select consoles.name,IFNULL(manufacturer,''),IFNULL(year,0),IFNULL(picture,''),IFNULL(user_id,0),IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,''),IFNULL(user_consoles.want,false),IFNULL(user_consoles.wantgames,false) from consoles left join user_consoles on consoles.name=user_consoles.name where consoles.name=? OR (consoles.name=? AND user_consoles.user_id=?)")
+	stmtGetConsole, err = u.Sth(db, "select consoles.name,IFNULL(manufacturer,''),IFNULL(year,0),IFNULL(picture,'') from consoles where consoles.name=?")
 	if err != nil {
 		glog.Fatalf("u.Sth(db,select id, IFNULL(name,''),IFNULL(manufacturer,''),IFNULL(year,0) from consoles where id=?): %s", err)
+	}
+	stmt := "select IFNULL(has,false),IFNULL(manual,false),IFNULL(box,false),IFNULL(rating,0),IFNULL(review,''),IFNULL(user_consoles.want,false),IFNULL(user_consoles.wantgames,false) from consoles, user_consoles where user_id=? and user_consoles.name=?"
+	stmtGetUserConsole, err = u.Sth(db, stmt)
+	if err != nil {
+		glog.Fatalf("u.Sth(db, %s): %s", stmt, err)
 	}
 	stmtUpdateConsole, err = u.Sth(db, "replace into consoles (name,manufacturer,year,picture) values (?,?,?,?)")
 	if err != nil {
@@ -202,10 +208,14 @@ func (c Console) CheapestGame() (g Game) {
 func GetConsole(name string, user auth.User) (Console, error) {
 	var c Console
 	var err error
-	err = stmtGetConsole.QueryRow(name, name, user.ID).Scan(&c.Name, &c.Manufacturer, &c.Year, &c.Picture, &c.User.ID, &c.Has, &c.HasManual, &c.HasBox, &c.Rating, &c.Review, &c.Want, &c.WantGames)
+	err = stmtGetConsole.QueryRow(name).Scan(&c.Name, &c.Manufacturer, &c.Year, &c.Picture)
 	c.User = user
 	if err != nil {
 		glog.Errorf("stmtGetConsoleQueryRow(%s,%v): %s", name, user.ID, err)
+	}
+	if user.ID > 0 {
+		err = stmtGetUserConsole.QueryRow(user.ID, name).Scan(&c.Has, &c.HasManual, &c.HasBox, &c.Rating, &c.Review, &c.Want, &c.WantGames)
+		c.User = user
 	}
 	return c, err
 }

@@ -27,9 +27,9 @@
     </div>
     <div id="cheapest{{.ShortName}}"><a href="{{.CheapestGame.EbayURL}}" target="_blank">{{.CheapestGame.Name}}{{.CheapestGame.Price}}</a></div>
     {{if .Has}}{{else}}
-    <input type="checkbox" id="want-console-{{.ShortName}}"  {{if .Want}}checked{{end}} onchange="save_want_console({{.ShortName}},'want-console-{{.ShortName}}')">Want
+    <input type="checkbox" id="want-console-{{.ShortName}}"  {{if .Want}}checked{{end}} onchange="save_want_console({{.Name}},'want-console-{{.ShortName}}')">Want
     {{end}}
-    <input type="checkbox" id="wantgames-console-{{.ShortName}}" {{if .WantGames}}checked{{end}} onchange="save_wantgames_console({{.ShortName}},'wantgames-console-{{.ShortName}}')">WantGames
+    <input type="checkbox" id="wantgames-console-{{.ShortName}}" {{if .WantGames}}checked{{end}} onchange="save_wantgames_console({{.Name}},'wantgames-console-{{.ShortName}}')">WantGames
 </div>
 {{ end }}
 
